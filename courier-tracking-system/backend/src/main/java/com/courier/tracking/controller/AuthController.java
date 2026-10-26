@@ -2,6 +2,8 @@ package com.courier.tracking.controller;
 
 import com.courier.tracking.dto.ApiResponse;
 import com.courier.tracking.dto.CustomerRegistrationRequest;
+import com.courier.tracking.dto.LoginRequest;
+import com.courier.tracking.dto.LoginResponse;
 import com.courier.tracking.dto.UserResponse;
 import com.courier.tracking.service.AuthService;
 import jakarta.validation.Valid;
@@ -33,5 +35,14 @@ public class AuthController {
         UserResponse response = authService.registerCustomer(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Customer account registered successfully", response));
+    }
+
+    /**
+     * Public endpoint for user authentication and JWT token issuance.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 }
