@@ -12,6 +12,10 @@ import com.courier.tracking.repository.ShipmentRepository;
 import com.courier.tracking.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,20 +78,7 @@ public class ShipmentService {
      */
     @Transactional
     public ShipmentResponse createShipment(CreateShipmentRequest request, String authenticatedEmail) {
-        String normalizedEmail = authenticatedEmail != null ? authenticatedEmail.toLowerCase(Locale.ROOT).trim() : "";
-        User customer = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer account not found for email: " + normalizedEmail));
-
-        // Enforce ROLE_CUSTOMER authority
-        if (!RoleName.ROLE_CUSTOMER.equals(customer.getRole().getName())) {
-            log.warn("Shipment creation denied: user '{}' does not have ROLE_CUSTOMER", normalizedEmail);
-            throw new AccessDeniedException("Only customers with ROLE_CUSTOMER are authorized to create shipments");
-        }
-
-        if (!Boolean.TRUE.equals(customer.getActive())) {
-            log.warn("Shipment creation denied: customer account '{}' is inactive", normalizedEmail);
-            throw new AccessDeniedException("Account is deactivated");
-        }
+        User customer = getValidatedCustomer(authenticatedEmail);
 
         String trackingNumber = generateUniqueTrackingNumber();
 
@@ -122,6 +113,67 @@ public class ShipmentService {
                 saved.getId(), saved.getTrackingNumber(), customer.getId(), saved.getPrice(), saved.getCurrency());
 
         return mapToResponse(saved);
+    }
+
+    /**
+     * Retrieves a paginated list of shipments belonging to the authenticated customer.
+     * Enforces customer role verification and active account status.
+     */
+    @Transactional(readOnly = true)
+    public Page<ShipmentResponse> getCustomerShipments(String authenticatedEmail, Pageable pageable) {
+        User customer = getValidatedCustomer(authenticatedEmail);
+
+        Pageable effectivePageable = pageable;
+        if (pageable == null) {
+            effectivePageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
+        } else if (pageable.getSort().isUnsorted()) {
+            effectivePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
+        }
+
+        Page<Shipment> shipments = shipmentRepository.findByCustomerId(customer.getId(), effectivePageable);
+        return shipments.map(this::mapToResponse);
+    }
+
+    /**
+     * Retrieves a single shipment by ID for the authenticated customer.
+     * Verifies that the shipment exists and belongs to the requesting customer.
+     */
+    @Transactional(readOnly = true)
+    public ShipmentResponse getShipmentById(Long id, String authenticatedEmail) {
+        if (id == null) {
+            throw new IllegalArgumentException("Shipment ID cannot be null");
+        }
+        User customer = getValidatedCustomer(authenticatedEmail);
+
+        Shipment shipment = shipmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment", "id", id));
+
+        if (!shipment.getCustomer().getId().equals(customer.getId())) {
+            log.warn("Access denied: customer '{}' (id={}) attempted to access shipment id={} belonging to customer id={}",
+                    customer.getEmail(), customer.getId(), id, shipment.getCustomer().getId());
+            throw new AccessDeniedException("Access denied: You do not have permission to access this shipment");
+        }
+
+        return mapToResponse(shipment);
+    }
+
+    private User getValidatedCustomer(String authenticatedEmail) {
+        String normalizedEmail = authenticatedEmail != null ? authenticatedEmail.toLowerCase(Locale.ROOT).trim() : "";
+        User customer = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer account not found for email: " + normalizedEmail));
+
+        // Enforce ROLE_CUSTOMER authority
+        if (!RoleName.ROLE_CUSTOMER.equals(customer.getRole().getName())) {
+            log.warn("Access denied: user '{}' does not have ROLE_CUSTOMER", normalizedEmail);
+            throw new AccessDeniedException("Only customers with ROLE_CUSTOMER are authorized to perform this operation");
+        }
+
+        if (!Boolean.TRUE.equals(customer.getActive())) {
+            log.warn("Access denied: customer account '{}' is inactive", normalizedEmail);
+            throw new AccessDeniedException("Account is deactivated");
+        }
+
+        return customer;
     }
 
     private String generateUniqueTrackingNumber() {
