@@ -25,6 +25,7 @@ public record ShipmentResponse(
         BigDecimal recipientLongitude,
         BigDecimal weightKg,
         BigDecimal price,
+        String currency,
         Instant estimatedDeliveryAt,
         Instant createdAt
 ) {

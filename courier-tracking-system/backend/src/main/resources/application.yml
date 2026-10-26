@@ -40,3 +40,8 @@ app:
   jwt:
     secret: ${JWT_SECRET:}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  pricing:
+    base-rate: ${APP_PRICING_BASE_RATE:10.00}
+    per-kg-rate: ${APP_PRICING_PER_KG_RATE:5.00}
+    currency: ${APP_PRICING_CURRENCY:USD}
+    min-price: ${APP_PRICING_MIN_PRICE:10.00}

@@ -141,7 +141,8 @@ class ShipmentCreationTests {
                 .andExpect(jsonPath("$.data.recipientName").value("Alice Smith"))
                 .andExpect(jsonPath("$.data.status").value("CREATED"))
                 .andExpect(jsonPath("$.data.weightKg").value(2.5))
-                .andExpect(jsonPath("$.data.price").value(35.0))
+                .andExpect(jsonPath("$.data.price").value(22.50))
+                .andExpect(jsonPath("$.data.currency").value("USD"))
                 .andExpect(jsonPath("$.data.customerId").value(customerUser.getId()))
                 .andExpect(jsonPath("$.data.customerEmail").value("shipment.customer@example.com"));
     }
@@ -172,6 +173,8 @@ class ShipmentCreationTests {
         Optional<Shipment> opt = shipmentRepository.findByTrackingNumber(trackingNumber);
         assertTrue(opt.isPresent());
         assertEquals(data.get("id").asLong(), opt.get().getId());
+        assertEquals("USD", opt.get().getCurrency());
+        assertEquals("USD", data.get("currency").asText());
     }
 
     @Test
@@ -360,5 +363,41 @@ class ShipmentCreationTests {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Access denied: You do not have permission to perform this action"));
+    }
+
+    @Test
+    @DisplayName("11. Client attempt to supply custom price in payload is ignored; server calculates price")
+    void testClientCannotOverrideServerCalculatedPrice() throws Exception {
+        // Client attempts to pass price 0.01 for a 2.0 kg package (should be $10 base + 2*5 = $20.00)
+        String payload = """
+                {
+                    "senderName": "Cheap Sender",
+                    "senderAddress": "100 Bargain St, Dallas, TX",
+                    "senderPhone": "+1-555-5555",
+                    "recipientName": "Recipient Doe",
+                    "recipientAddress": "200 Target Rd, Austin, TX",
+                    "recipientPhone": "+1-555-6666",
+                    "weightKg": 2.000,
+                    "price": 0.01,
+                    "currency": "EUR"
+                }
+                """;
+
+        MvcResult result = mockMvc.perform(post("/api/v1/shipments")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.weightKg").value(2.0))
+                .andExpect(jsonPath("$.data.price").value(20.00))
+                .andExpect(jsonPath("$.data.currency").value("USD"))
+                .andReturn();
+
+        JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());
+        Long shipmentId = root.get("data").get("id").asLong();
+
+        Shipment shipment = shipmentRepository.findById(shipmentId).orElseThrow();
+        assertEquals(new BigDecimal("20.00"), shipment.getPrice(), "Server must calculate price ($10 base + 2kg * $5)");
+        assertEquals("USD", shipment.getCurrency(), "Server must assign configured currency");
     }
 }

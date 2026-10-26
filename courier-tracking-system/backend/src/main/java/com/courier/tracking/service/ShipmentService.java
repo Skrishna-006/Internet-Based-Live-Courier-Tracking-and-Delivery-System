@@ -1,5 +1,6 @@
 package com.courier.tracking.service;
 
+import com.courier.tracking.config.PricingProperties;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.entity.RoleName;
@@ -24,7 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
- * Service managing shipment creation and business lifecycle workflows.
+ * Service managing shipment creation and business lifecycle workflows with configurable pricing rules.
  */
 @Service
 public class ShipmentService {
@@ -36,16 +37,40 @@ public class ShipmentService {
 
     private final ShipmentRepository shipmentRepository;
     private final UserRepository userRepository;
+    private final PricingProperties pricingProperties;
 
-    public ShipmentService(ShipmentRepository shipmentRepository, UserRepository userRepository) {
+    public ShipmentService(ShipmentRepository shipmentRepository,
+                           UserRepository userRepository,
+                           PricingProperties pricingProperties) {
         this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
+        this.pricingProperties = pricingProperties;
+    }
+
+    /**
+     * Calculates the shipment price based on configured base rate, per-kg rate, and minimum price floor.
+     * Formula: max(minPrice, baseRate + (weightKg * perKgRate)), rounded to 2 decimal places.
+     */
+    public BigDecimal calculatePrice(BigDecimal weightKg) {
+        if (weightKg == null) {
+            throw new IllegalArgumentException("Weight in kg is required for price calculation");
+        }
+        BigDecimal base = pricingProperties.getBaseRate() != null ? pricingProperties.getBaseRate() : new BigDecimal("10.00");
+        BigDecimal perKg = pricingProperties.getPerKgRate() != null ? pricingProperties.getPerKgRate() : new BigDecimal("5.00");
+        BigDecimal min = pricingProperties.getMinPrice() != null ? pricingProperties.getMinPrice() : new BigDecimal("10.00");
+
+        BigDecimal rawPrice = base.add(weightKg.multiply(perKg)).setScale(2, RoundingMode.HALF_UP);
+        if (rawPrice.compareTo(min) < 0) {
+            return min.setScale(2, RoundingMode.HALF_UP);
+        }
+        return rawPrice;
     }
 
     /**
      * Creates a new shipment for the authenticated customer.
      * Enforces customer role verification, server-side tracking number generation,
-     * status initialization to CREATED, and price calculation if not provided.
+     * status initialization to CREATED, and server-side pricing calculation.
+     * Client-supplied prices and privileged fields are strictly ignored.
      */
     @Transactional
     public ShipmentResponse createShipment(CreateShipmentRequest request, String authenticatedEmail) {
@@ -66,11 +91,9 @@ public class ShipmentService {
 
         String trackingNumber = generateUniqueTrackingNumber();
 
-        // Calculate standard rate if not provided: base rate $10.00 + $5.00/kg
-        BigDecimal finalPrice = request.price();
-        if (finalPrice == null) {
-            finalPrice = calculateStandardRate(request.weightKg());
-        }
+        // Server unconditionally calculates price and assigns configured currency
+        BigDecimal finalPrice = calculatePrice(request.weightKg());
+        String currency = pricingProperties.getCurrency() != null ? pricingProperties.getCurrency().toUpperCase(Locale.ROOT).trim() : "USD";
 
         Shipment shipment = new Shipment(
                 trackingNumber,
@@ -82,7 +105,8 @@ public class ShipmentService {
                 request.recipientAddress(),
                 request.recipientPhone(),
                 request.weightKg(),
-                finalPrice
+                finalPrice,
+                currency
         );
 
         shipment.setStatus(ShipmentStatus.CREATED);
@@ -94,16 +118,10 @@ public class ShipmentService {
         shipment.setEstimatedDeliveryAt(Instant.now().plusSeconds(3 * 86400));
 
         Shipment saved = shipmentRepository.save(shipment);
-        log.info("Shipment created successfully: id={}, trackingNumber={}, customerId={}",
-                saved.getId(), saved.getTrackingNumber(), customer.getId());
+        log.info("Shipment created successfully: id={}, trackingNumber={}, customerId={}, price={} {}",
+                saved.getId(), saved.getTrackingNumber(), customer.getId(), saved.getPrice(), saved.getCurrency());
 
         return mapToResponse(saved);
-    }
-
-    private BigDecimal calculateStandardRate(BigDecimal weightKg) {
-        BigDecimal baseRate = new BigDecimal("10.00");
-        BigDecimal perKgRate = new BigDecimal("5.00");
-        return baseRate.add(weightKg.multiply(perKgRate)).setScale(2, RoundingMode.HALF_UP);
     }
 
     private String generateUniqueTrackingNumber() {
@@ -139,6 +157,7 @@ public class ShipmentService {
                 s.getRecipientLongitude(),
                 s.getWeightKg(),
                 s.getPrice(),
+                s.getCurrency(),
                 s.getEstimatedDeliveryAt(),
                 s.getCreatedAt()
         );

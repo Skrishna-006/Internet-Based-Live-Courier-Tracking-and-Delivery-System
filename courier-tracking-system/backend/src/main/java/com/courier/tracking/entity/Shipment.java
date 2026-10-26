@@ -64,6 +64,9 @@ public class Shipment implements Serializable {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
+
     @Column(name = "estimated_delivery_at")
     private Instant estimatedDeliveryAt;
 
@@ -87,7 +90,7 @@ public class Shipment implements Serializable {
 
     public Shipment(String trackingNumber, User customer, String senderName, String senderAddress,
                     String senderPhone, String recipientName, String recipientAddress,
-                    String recipientPhone, BigDecimal weightKg, BigDecimal price) {
+                    String recipientPhone, BigDecimal weightKg, BigDecimal price, String currency) {
         this.trackingNumber = trackingNumber;
         this.customer = customer;
         this.senderName = senderName;
@@ -98,7 +101,15 @@ public class Shipment implements Serializable {
         this.recipientPhone = recipientPhone;
         this.weightKg = weightKg;
         this.price = price;
+        this.currency = (currency != null && !currency.isBlank()) ? currency.toUpperCase().trim() : "USD";
         this.status = ShipmentStatus.CREATED;
+    }
+
+    public Shipment(String trackingNumber, User customer, String senderName, String senderAddress,
+                    String senderPhone, String recipientName, String recipientAddress,
+                    String recipientPhone, BigDecimal weightKg, BigDecimal price) {
+        this(trackingNumber, customer, senderName, senderAddress, senderPhone,
+             recipientName, recipientAddress, recipientPhone, weightKg, price, "USD");
     }
 
     @PrePersist
@@ -108,6 +119,9 @@ public class Shipment implements Serializable {
         this.updatedAt = now;
         if (this.status == null) {
             this.status = ShipmentStatus.CREATED;
+        }
+        if (this.currency == null || this.currency.isBlank()) {
+            this.currency = "USD";
         }
     }
 
@@ -234,6 +248,14 @@ public class Shipment implements Serializable {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = (currency != null && !currency.isBlank()) ? currency.toUpperCase().trim() : "USD";
     }
 
     public Instant getEstimatedDeliveryAt() {

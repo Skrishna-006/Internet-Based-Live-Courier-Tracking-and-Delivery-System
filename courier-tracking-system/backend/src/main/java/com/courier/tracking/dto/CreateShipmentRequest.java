@@ -63,4 +63,22 @@ public record CreateShipmentRequest(
         if (recipientAddress != null) recipientAddress = recipientAddress.trim();
         if (recipientPhone != null) recipientPhone = recipientPhone.trim();
     }
+
+    /**
+     * Overloaded constructor omitting the legacy client-supplied price parameter.
+     */
+    public CreateShipmentRequest(
+            String senderName,
+            String senderAddress,
+            String senderPhone,
+            String recipientName,
+            String recipientAddress,
+            String recipientPhone,
+            BigDecimal recipientLatitude,
+            BigDecimal recipientLongitude,
+            BigDecimal weightKg
+    ) {
+        this(senderName, senderAddress, senderPhone, recipientName, recipientAddress, recipientPhone,
+                recipientLatitude, recipientLongitude, weightKg, null);
+    }
 }
