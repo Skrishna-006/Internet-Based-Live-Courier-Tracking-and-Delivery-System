@@ -108,13 +108,14 @@ public class JwtTokenProvider {
     public Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith(signingKey)
+                .requireIssuer(ISSUER)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
 
     /**
-     * Validates whether a token has a valid signature, structure, and unexpired timestamp.
+     * Validates whether a token has a valid signature, structure, issuer, and unexpired timestamp.
      */
     public boolean validateToken(String token) {
         if (token == null || token.isBlank()) {
@@ -123,6 +124,7 @@ public class JwtTokenProvider {
         try {
             Jwts.parser()
                     .verifyWith(signingKey)
+                    .requireIssuer(ISSUER)
                     .build()
                     .parseSignedClaims(token);
             return true;
