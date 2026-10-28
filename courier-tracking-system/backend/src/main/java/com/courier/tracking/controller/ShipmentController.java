@@ -1,6 +1,7 @@
 package com.courier.tracking.controller;
 
 import com.courier.tracking.dto.ApiResponse;
+import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.service.ShipmentService;
@@ -69,5 +70,20 @@ public class ShipmentController {
     ) {
         ShipmentResponse response = shipmentService.getShipmentById(id, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Shipment retrieved successfully", response));
+    }
+
+    /**
+     * Endpoint allowing an administrator/dispatcher to assign or reassign a delivery agent to a shipment.
+     * Enforces ROLE_ADMIN authority via Spring Security.
+     */
+    @PatchMapping("/{id}/assign")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse<ShipmentResponse>> assignDeliveryAgent(
+            @PathVariable Long id,
+            @Valid @RequestBody AssignAgentRequest request,
+            Authentication authentication
+    ) {
+        ShipmentResponse response = shipmentService.assignDeliveryAgent(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Delivery agent assigned successfully", response));
     }
 }

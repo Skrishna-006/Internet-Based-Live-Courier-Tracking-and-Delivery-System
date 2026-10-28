@@ -1,6 +1,7 @@
 package com.courier.tracking.service;
 
 import com.courier.tracking.config.PricingProperties;
+import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.entity.RoleName;
@@ -157,6 +158,85 @@ public class ShipmentService {
         return mapToResponse(shipment);
     }
 
+    /**
+     * Assigns or reassigns an eligible delivery agent to an existing shipment.
+     * Enforces administrator authority, agent eligibility (active user with ROLE_DELIVERY_AGENT),
+     * and shipment status rules (transitions CREATED -> ASSIGNED; preserves ASSIGNED on reassignment;
+     * rejects assignment on terminal states DELIVERED, CANCELLED, RETURNED).
+     */
+    @Transactional
+    public ShipmentResponse assignDeliveryAgent(Long shipmentId, AssignAgentRequest request, String authenticatedEmail) {
+        if (shipmentId == null) {
+            throw new IllegalArgumentException("Shipment ID cannot be null");
+        }
+        if (request == null || request.agentId() == null) {
+            throw new IllegalArgumentException("Delivery agent ID is required");
+        }
+
+        // Verify administrator authority
+        User admin = getValidatedAdmin(authenticatedEmail);
+
+        // Retrieve target shipment
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment", "id", shipmentId));
+
+        // Check shipment status restrictions
+        if (shipment.getStatus() == ShipmentStatus.DELIVERED ||
+                shipment.getStatus() == ShipmentStatus.CANCELLED ||
+                shipment.getStatus() == ShipmentStatus.RETURNED) {
+            log.warn("Assignment rejected: shipment '{}' has terminal status '{}'", shipment.getTrackingNumber(), shipment.getStatus());
+            throw new IllegalStateException(String.format("Cannot assign delivery agent to shipment '%s' with terminal status '%s'",
+                    shipment.getTrackingNumber(), shipment.getStatus()));
+        }
+
+        // Retrieve and validate target delivery agent
+        Long agentId = request.agentId();
+        User agent = userRepository.findById(agentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Delivery agent", "id", agentId));
+
+        if (!RoleName.ROLE_DELIVERY_AGENT.equals(agent.getRole().getName())) {
+            log.warn("Assignment rejected: target user id={} is not a delivery agent (role={})", agentId, agent.getRole().getName());
+            throw new IllegalArgumentException("User with id " + agentId + " does not have the delivery agent role");
+        }
+
+        if (!Boolean.TRUE.equals(agent.getActive())) {
+            log.warn("Assignment rejected: target delivery agent id={} is inactive/disabled", agentId);
+            throw new IllegalArgumentException("Delivery agent with id " + agentId + " is inactive");
+        }
+
+        // Set the assigned agent
+        shipment.setAssignedAgent(agent);
+
+        // If status was CREATED, transition to ASSIGNED; if already ASSIGNED or other active status, retain assignment
+        if (shipment.getStatus() == ShipmentStatus.CREATED) {
+            shipment.setStatus(ShipmentStatus.ASSIGNED);
+        }
+
+        Shipment updated = shipmentRepository.save(shipment);
+        log.info("Shipment '{}' successfully assigned to agent '{}' (id={}) by admin '{}'",
+                updated.getTrackingNumber(), agent.getEmail(), agent.getId(), admin.getEmail());
+
+        return mapToResponse(updated);
+    }
+
+    private User getValidatedAdmin(String authenticatedEmail) {
+        String normalizedEmail = authenticatedEmail != null ? authenticatedEmail.toLowerCase(Locale.ROOT).trim() : "";
+        User admin = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", normalizedEmail));
+
+        if (!RoleName.ROLE_ADMIN.equals(admin.getRole().getName())) {
+            log.warn("Access denied: user '{}' does not have ROLE_ADMIN", normalizedEmail);
+            throw new AccessDeniedException("Only administrators with ROLE_ADMIN are authorized to assign delivery agents");
+        }
+
+        if (!Boolean.TRUE.equals(admin.getActive())) {
+            log.warn("Access denied: administrator account '{}' is inactive", normalizedEmail);
+            throw new AccessDeniedException("Account is deactivated");
+        }
+
+        return admin;
+    }
+
     private User getValidatedCustomer(String authenticatedEmail) {
         String normalizedEmail = authenticatedEmail != null ? authenticatedEmail.toLowerCase(Locale.ROOT).trim() : "";
         User customer = userRepository.findByEmail(normalizedEmail)
@@ -193,12 +273,17 @@ public class ShipmentService {
     }
 
     private ShipmentResponse mapToResponse(Shipment s) {
+        Long agentId = s.getAssignedAgent() != null ? s.getAssignedAgent().getId() : null;
+        String agentName = s.getAssignedAgent() != null ? s.getAssignedAgent().getFullName() : null;
+
         return new ShipmentResponse(
                 s.getId(),
                 s.getTrackingNumber(),
                 s.getStatus(),
                 s.getCustomer().getId(),
                 s.getCustomer().getEmail(),
+                agentId,
+                agentName,
                 s.getSenderName(),
                 s.getSenderAddress(),
                 s.getSenderPhone(),
