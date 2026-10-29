@@ -4,6 +4,7 @@ import com.courier.tracking.dto.ApiResponse;
 import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.ShipmentResponse;
+import com.courier.tracking.dto.UpdateShipmentStatusRequest;
 import com.courier.tracking.service.ShipmentService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -85,5 +86,21 @@ public class ShipmentController {
     ) {
         ShipmentResponse response = shipmentService.assignDeliveryAgent(id, request, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Delivery agent assigned successfully", response));
+    }
+
+    /**
+     * Endpoint allowing an administrator or the assigned delivery agent to transition a shipment's lifecycle status.
+     * Automatically records an immutable tracking event in the same transaction.
+     * Enforces ROLE_ADMIN or ROLE_DELIVERY_AGENT authority via Spring Security.
+     */
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_DELIVERY_AGENT')")
+    public ResponseEntity<ApiResponse<ShipmentResponse>> updateShipmentStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateShipmentStatusRequest request,
+            Authentication authentication
+    ) {
+        ShipmentResponse response = shipmentService.updateShipmentStatus(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Shipment status updated successfully", response));
     }
 }

@@ -4,12 +4,15 @@ import com.courier.tracking.config.PricingProperties;
 import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.ShipmentResponse;
+import com.courier.tracking.dto.UpdateShipmentStatusRequest;
 import com.courier.tracking.entity.RoleName;
 import com.courier.tracking.entity.Shipment;
 import com.courier.tracking.entity.ShipmentStatus;
+import com.courier.tracking.entity.TrackingEvent;
 import com.courier.tracking.entity.User;
 import com.courier.tracking.exception.ResourceNotFoundException;
 import com.courier.tracking.repository.ShipmentRepository;
+import com.courier.tracking.repository.TrackingEventRepository;
 import com.courier.tracking.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,13 +46,23 @@ public class ShipmentService {
     private final ShipmentRepository shipmentRepository;
     private final UserRepository userRepository;
     private final PricingProperties pricingProperties;
+    private final TrackingEventRepository trackingEventRepository;
 
     public ShipmentService(ShipmentRepository shipmentRepository,
                            UserRepository userRepository,
                            PricingProperties pricingProperties) {
+        this(shipmentRepository, userRepository, pricingProperties, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ShipmentService(ShipmentRepository shipmentRepository,
+                           UserRepository userRepository,
+                           PricingProperties pricingProperties,
+                           TrackingEventRepository trackingEventRepository) {
         this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
         this.pricingProperties = pricingProperties;
+        this.trackingEventRepository = trackingEventRepository;
     }
 
     /**
@@ -272,6 +285,155 @@ public class ShipmentService {
         return String.format("%s-%s-%d", TRACKING_PREFIX, datePart, System.currentTimeMillis() % 100000000L);
     }
 
+    /**
+     * Updates a shipment's lifecycle status and automatically persists a corresponding tracking event
+     * within the same database transaction.
+     * Enforces authentication, role authorization (ADMIN or assigned DELIVERY_AGENT),
+     * finite state machine transition rules, assigned agent prerequisite checks, and truthful audit logging.
+     *
+     * @param shipmentId Database ID of the target shipment
+     * @param request Inbound request containing target status and optional waypoint scan information
+     * @param authenticatedEmail Authenticated user principal email
+     * @return Updated shipment response envelope
+     */
+    @Transactional
+    public ShipmentResponse updateShipmentStatus(Long shipmentId, UpdateShipmentStatusRequest request, String authenticatedEmail) {
+        if (shipmentId == null || shipmentId <= 0) {
+            throw new IllegalArgumentException("Shipment ID must be a positive number");
+        }
+        if (request == null || request.status() == null) {
+            throw new IllegalArgumentException("Target shipment status is required");
+        }
+
+        // Retrieve target shipment
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment", "id", shipmentId));
+
+        ShipmentStatus currentStatus = shipment.getStatus();
+        ShipmentStatus targetStatus = request.status();
+
+        // Validate finite state machine transition
+        validateStatusTransition(currentStatus, targetStatus);
+
+        // Require an assigned delivery agent for courier-dependent transitions
+        validateAssignedAgentRequirements(shipment, targetStatus);
+
+        // Authenticate and authorize the actor (ADMIN or assigned DELIVERY_AGENT)
+        User actor = getValidatedStatusUpdater(authenticatedEmail, shipment, targetStatus);
+
+        // Update shipment status
+        shipment.setStatus(targetStatus);
+        Instant now = Instant.now();
+        if (targetStatus == ShipmentStatus.DELIVERED) {
+            shipment.setActualDeliveryAt(now);
+        }
+
+        Shipment savedShipment = shipmentRepository.save(shipment);
+
+        // Record tracking event
+        TrackingEvent event = new TrackingEvent();
+        event.setShipment(savedShipment);
+        event.setStatus(targetStatus);
+        event.setLocationName(request.locationName() != null && !request.locationName().isBlank() ? request.locationName().trim() : null);
+
+        String remarks = (request.remarks() != null && !request.remarks().isBlank())
+                ? request.remarks().trim()
+                : "Shipment status updated to " + targetStatus;
+        event.setRemarks(remarks);
+        event.setLatitude(request.latitude());
+        event.setLongitude(request.longitude());
+        event.setEventTimestamp(now);
+
+        trackingEventRepository.save(event);
+
+        log.info("Shipment '{}' (id={}) transitioned from '{}' to '{}' by user '{}' (role={}), trackingEventId={}",
+                savedShipment.getTrackingNumber(), savedShipment.getId(), currentStatus, targetStatus,
+                actor.getEmail(), actor.getRole().getName(), event.getId());
+
+        return mapToResponse(savedShipment);
+    }
+
+    private void validateStatusTransition(ShipmentStatus current, ShipmentStatus target) {
+        if (current == target) {
+            throw new IllegalStateException(String.format("Shipment is already in status '%s'", current));
+        }
+
+        if (current == ShipmentStatus.DELIVERED || current == ShipmentStatus.RETURNED || current == ShipmentStatus.CANCELLED) {
+            throw new IllegalStateException(String.format("Cannot transition shipment from terminal status '%s'", current));
+        }
+
+        boolean allowed = switch (current) {
+            case CREATED -> (target == ShipmentStatus.ASSIGNED || target == ShipmentStatus.CANCELLED);
+            case ASSIGNED -> (target == ShipmentStatus.PICKED_UP || target == ShipmentStatus.CANCELLED);
+            case PICKED_UP -> (target == ShipmentStatus.IN_TRANSIT || target == ShipmentStatus.OUT_FOR_DELIVERY);
+            case IN_TRANSIT -> (target == ShipmentStatus.OUT_FOR_DELIVERY);
+            case OUT_FOR_DELIVERY -> (target == ShipmentStatus.DELIVERED || target == ShipmentStatus.ATTEMPT_FAILED);
+            case ATTEMPT_FAILED -> (target == ShipmentStatus.OUT_FOR_DELIVERY || target == ShipmentStatus.RETURNED);
+            default -> false;
+        };
+
+        if (!allowed) {
+            throw new IllegalStateException(String.format("Invalid status transition from '%s' to '%s'", current, target));
+        }
+    }
+
+    private void validateAssignedAgentRequirements(Shipment shipment, ShipmentStatus targetStatus) {
+        // Physical fulfillment statuses require an assigned courier
+        if (targetStatus == ShipmentStatus.PICKED_UP ||
+                targetStatus == ShipmentStatus.IN_TRANSIT ||
+                targetStatus == ShipmentStatus.OUT_FOR_DELIVERY ||
+                targetStatus == ShipmentStatus.DELIVERED ||
+                targetStatus == ShipmentStatus.ATTEMPT_FAILED ||
+                targetStatus == ShipmentStatus.RETURNED) {
+            if (shipment.getAssignedAgent() == null) {
+                log.warn("Status transition to '{}' rejected: shipment '{}' has no assigned agent", targetStatus, shipment.getTrackingNumber());
+                throw new IllegalStateException(String.format("Cannot transition shipment to '%s' without an assigned delivery agent", targetStatus));
+            }
+            if (!Boolean.TRUE.equals(shipment.getAssignedAgent().getActive())) {
+                log.warn("Status transition to '{}' rejected: assigned agent id={} is deactivated", targetStatus, shipment.getAssignedAgent().getId());
+                throw new IllegalStateException("Cannot transition shipment: assigned delivery agent is deactivated");
+            }
+        }
+    }
+
+    private User getValidatedStatusUpdater(String authenticatedEmail, Shipment shipment, ShipmentStatus targetStatus) {
+        String normalizedEmail = authenticatedEmail != null ? authenticatedEmail.toLowerCase(Locale.ROOT).trim() : "";
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", normalizedEmail));
+
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            log.warn("Access denied: user account '{}' is deactivated", normalizedEmail);
+            throw new AccessDeniedException("Account is deactivated");
+        }
+
+        RoleName role = user.getRole().getName();
+        if (RoleName.ROLE_ADMIN.equals(role)) {
+            return user;
+        }
+
+        if (RoleName.ROLE_DELIVERY_AGENT.equals(role)) {
+            // Delivery agent must be assigned to this shipment
+            if (shipment.getAssignedAgent() == null || !shipment.getAssignedAgent().getId().equals(user.getId())) {
+                log.warn("Access denied: delivery agent '{}' (id={}) is not assigned to shipment '{}' (id={})",
+                        user.getEmail(), user.getId(), shipment.getTrackingNumber(), shipment.getId());
+                throw new AccessDeniedException("Access denied: You are not assigned to this shipment");
+            }
+
+            // Delivery agents cannot cancel shipments
+            if (targetStatus == ShipmentStatus.CANCELLED) {
+                log.warn("Access denied: delivery agent '{}' attempted to cancel shipment '{}'", user.getEmail(), shipment.getTrackingNumber());
+                throw new AccessDeniedException("Access denied: Delivery agents are not authorized to cancel shipments");
+            }
+
+            return user;
+        }
+
+        // Customers or any other role
+        log.warn("Access denied: user '{}' with role '{}' attempted status transition on shipment '{}'",
+                user.getEmail(), role, shipment.getTrackingNumber());
+        throw new AccessDeniedException("Access denied: You do not have permission to perform this action");
+    }
+
     private ShipmentResponse mapToResponse(Shipment s) {
         Long agentId = s.getAssignedAgent() != null ? s.getAssignedAgent().getId() : null;
         String agentName = s.getAssignedAgent() != null ? s.getAssignedAgent().getFullName() : null;
@@ -296,6 +458,7 @@ public class ShipmentService {
                 s.getPrice(),
                 s.getCurrency(),
                 s.getEstimatedDeliveryAt(),
+                s.getActualDeliveryAt(),
                 s.getCreatedAt()
         );
     }
