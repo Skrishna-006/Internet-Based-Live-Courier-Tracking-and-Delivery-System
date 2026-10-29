@@ -3,8 +3,11 @@ package com.courier.tracking.controller;
 import com.courier.tracking.dto.ApiResponse;
 import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
+import com.courier.tracking.dto.DeliveryConfirmationResponse;
+import com.courier.tracking.dto.DeliveryOtpResponse;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.dto.UpdateShipmentStatusRequest;
+import com.courier.tracking.dto.VerifyDeliveryOtpRequest;
 import com.courier.tracking.service.ShipmentService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -102,5 +105,34 @@ public class ShipmentController {
     ) {
         ShipmentResponse response = shipmentService.updateShipmentStatus(id, request, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Shipment status updated successfully", response));
+    }
+
+    /**
+     * Endpoint allowing an authorized actor (admin, assigned delivery agent, or owning customer)
+     * to request/generate a cryptographically secure delivery OTP.
+     */
+    @PostMapping("/{id}/delivery-otp")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_DELIVERY_AGENT', 'ROLE_CUSTOMER')")
+    public ResponseEntity<ApiResponse<DeliveryOtpResponse>> generateDeliveryOtp(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        DeliveryOtpResponse response = shipmentService.generateDeliveryOtp(id, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Delivery OTP generated successfully", response));
+    }
+
+    /**
+     * Endpoint allowing an authorized delivery agent or administrator to verify the recipient's OTP
+     * and confirm shipment delivery. Customers are strictly forbidden from executing verification.
+     */
+    @PostMapping("/{id}/delivery/verify-otp")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_DELIVERY_AGENT')")
+    public ResponseEntity<ApiResponse<DeliveryConfirmationResponse>> confirmDeliveryWithOtp(
+            @PathVariable Long id,
+            @Valid @RequestBody VerifyDeliveryOtpRequest request,
+            Authentication authentication
+    ) {
+        DeliveryConfirmationResponse response = shipmentService.confirmDeliveryWithOtp(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Delivery confirmed successfully", response));
     }
 }

@@ -73,6 +73,18 @@ public class Shipment implements Serializable {
     @Column(name = "actual_delivery_at")
     private Instant actualDeliveryAt;
 
+    @Column(name = "delivery_otp_hash", length = 255)
+    private String deliveryOtpHash;
+
+    @Column(name = "delivery_otp_expires_at")
+    private Instant deliveryOtpExpiresAt;
+
+    @Column(name = "delivery_otp_attempts", nullable = false)
+    private int deliveryOtpAttempts = 0;
+
+    @Column(name = "delivery_otp_last_sent_at")
+    private Instant deliveryOtpLastSentAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -272,6 +284,38 @@ public class Shipment implements Serializable {
 
     public void setActualDeliveryAt(Instant actualDeliveryAt) {
         this.actualDeliveryAt = actualDeliveryAt;
+    }
+
+    public String getDeliveryOtpHash() {
+        return deliveryOtpHash;
+    }
+
+    public void setDeliveryOtpHash(String deliveryOtpHash) {
+        this.deliveryOtpHash = deliveryOtpHash;
+    }
+
+    public Instant getDeliveryOtpExpiresAt() {
+        return deliveryOtpExpiresAt;
+    }
+
+    public void setDeliveryOtpExpiresAt(Instant deliveryOtpExpiresAt) {
+        this.deliveryOtpExpiresAt = deliveryOtpExpiresAt;
+    }
+
+    public int getDeliveryOtpAttempts() {
+        return deliveryOtpAttempts;
+    }
+
+    public void setDeliveryOtpAttempts(int deliveryOtpAttempts) {
+        this.deliveryOtpAttempts = deliveryOtpAttempts;
+    }
+
+    public Instant getDeliveryOtpLastSentAt() {
+        return deliveryOtpLastSentAt;
+    }
+
+    public void setDeliveryOtpLastSentAt(Instant deliveryOtpLastSentAt) {
+        this.deliveryOtpLastSentAt = deliveryOtpLastSentAt;
     }
 
     public Instant getCreatedAt() {

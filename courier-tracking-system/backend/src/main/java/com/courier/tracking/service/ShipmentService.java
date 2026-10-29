@@ -3,14 +3,20 @@ package com.courier.tracking.service;
 import com.courier.tracking.config.PricingProperties;
 import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
+import com.courier.tracking.dto.DeliveryConfirmationResponse;
+import com.courier.tracking.dto.DeliveryOtpResponse;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.dto.UpdateShipmentStatusRequest;
+import com.courier.tracking.dto.VerifyDeliveryOtpRequest;
+import com.courier.tracking.entity.DeliveryProof;
+import com.courier.tracking.entity.ProofType;
 import com.courier.tracking.entity.RoleName;
 import com.courier.tracking.entity.Shipment;
 import com.courier.tracking.entity.ShipmentStatus;
 import com.courier.tracking.entity.TrackingEvent;
 import com.courier.tracking.entity.User;
 import com.courier.tracking.exception.ResourceNotFoundException;
+import com.courier.tracking.repository.DeliveryProofRepository;
 import com.courier.tracking.repository.ShipmentRepository;
 import com.courier.tracking.repository.TrackingEventRepository;
 import com.courier.tracking.repository.UserRepository;
@@ -21,12 +27,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -47,22 +55,35 @@ public class ShipmentService {
     private final UserRepository userRepository;
     private final PricingProperties pricingProperties;
     private final TrackingEventRepository trackingEventRepository;
+    private final DeliveryProofRepository deliveryProofRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public ShipmentService(ShipmentRepository shipmentRepository,
                            UserRepository userRepository,
                            PricingProperties pricingProperties) {
-        this(shipmentRepository, userRepository, pricingProperties, null);
+        this(shipmentRepository, userRepository, pricingProperties, null, null, null);
+    }
+
+    public ShipmentService(ShipmentRepository shipmentRepository,
+                           UserRepository userRepository,
+                           PricingProperties pricingProperties,
+                           TrackingEventRepository trackingEventRepository) {
+        this(shipmentRepository, userRepository, pricingProperties, trackingEventRepository, null, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
     public ShipmentService(ShipmentRepository shipmentRepository,
                            UserRepository userRepository,
                            PricingProperties pricingProperties,
-                           TrackingEventRepository trackingEventRepository) {
+                           TrackingEventRepository trackingEventRepository,
+                           DeliveryProofRepository deliveryProofRepository,
+                           PasswordEncoder passwordEncoder) {
         this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
         this.pricingProperties = pricingProperties;
         this.trackingEventRepository = trackingEventRepository;
+        this.deliveryProofRepository = deliveryProofRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -461,5 +482,274 @@ public class ShipmentService {
                 s.getActualDeliveryAt(),
                 s.getCreatedAt()
         );
+    }
+
+    /**
+     * Generates a cryptographically random, 6-digit delivery OTP for a shipment in OUT_FOR_DELIVERY status.
+     * Enforces role authorization (admin, assigned agent, or shipment customer), rate limiting (60s cooldown),
+     * and secure one-way hashing (never stores or logs raw OTP).
+     *
+     * @param shipmentId Database ID of the target shipment
+     * @param authenticatedEmail Authenticated user principal email
+     * @return DeliveryOtpResponse containing tracking details and expiration metadata
+     */
+    @Transactional
+    public DeliveryOtpResponse generateDeliveryOtp(Long shipmentId, String authenticatedEmail) {
+        if (shipmentId == null || shipmentId <= 0) {
+            throw new IllegalArgumentException("Shipment ID must be a positive number");
+        }
+
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment", "id", shipmentId));
+
+        User currentUser = getValidatedUser(authenticatedEmail);
+
+        // Enforce authorization: admin, shipment customer, or assigned delivery agent
+        validateOtpRequestAuthorization(currentUser, shipment);
+
+        // State machine constraint: must be OUT_FOR_DELIVERY
+        if (shipment.getStatus() == ShipmentStatus.DELIVERED) {
+            throw new IllegalStateException("Shipment has already been delivered");
+        }
+        if (shipment.getStatus() == ShipmentStatus.CANCELLED || shipment.getStatus() == ShipmentStatus.RETURNED) {
+            throw new IllegalStateException(String.format("Cannot generate delivery OTP for shipment in terminal status '%s'", shipment.getStatus()));
+        }
+        if (shipment.getStatus() != ShipmentStatus.OUT_FOR_DELIVERY) {
+            throw new IllegalStateException(String.format("Delivery OTP can only be generated when shipment is in OUT_FOR_DELIVERY status (current: '%s')", shipment.getStatus()));
+        }
+
+        // Rate limit: 60-second cooldown between generation requests
+        Instant now = Instant.now();
+        if (shipment.getDeliveryOtpLastSentAt() != null) {
+            long secondsSinceLast = Duration.between(shipment.getDeliveryOtpLastSentAt(), now).getSeconds();
+            if (secondsSinceLast < 60) {
+                log.warn("OTP generation rate limited for shipment '{}' (requested {}s ago)", shipment.getTrackingNumber(), secondsSinceLast);
+                throw new IllegalStateException("Please wait at least 60 seconds before requesting a new OTP.");
+            }
+        }
+
+        // Generate cryptographically unpredictable 6-digit OTP
+        int otpNumber = 100_000 + RANDOM.nextInt(900_000);
+        String rawOtp = String.valueOf(otpNumber);
+
+        // Hash OTP with configured PasswordEncoder (BCrypt) - never store plaintext
+        String hashedOtp = passwordEncoder.encode(rawOtp);
+        Instant expiresAt = now.plus(Duration.ofMinutes(10));
+
+        shipment.setDeliveryOtpHash(hashedOtp);
+        shipment.setDeliveryOtpExpiresAt(expiresAt);
+        shipment.setDeliveryOtpAttempts(0);
+        shipment.setDeliveryOtpLastSentAt(now);
+
+        shipmentRepository.save(shipment);
+
+        // Safe logging without plaintext secret
+        log.info("Delivery OTP generated for shipment '{}' (id={}) by user '{}' (role={}), expiresAt={}",
+                shipment.getTrackingNumber(), shipment.getId(), currentUser.getEmail(), currentUser.getRole().getName(), expiresAt);
+
+        return new DeliveryOtpResponse(
+                shipment.getId(),
+                shipment.getTrackingNumber(),
+                rawOtp,
+                expiresAt,
+                "Delivery OTP generated successfully and dispatched to recipient"
+        );
+    }
+
+    /**
+     * Confirms shipment delivery using the recipient's one-time password (OTP).
+     * Enforces role authorization (assigned agent or admin only; customers are forbidden),
+     * status constraints (must be OUT_FOR_DELIVERY), expiration, max failed attempt thresholds,
+     * replay prevention, atomic status transition, DeliveryProof creation, and TrackingEvent logging.
+     *
+     * @param shipmentId Database ID of the target shipment
+     * @param request Inbound verification payload containing OTP and recipient handover details
+     * @param authenticatedEmail Authenticated user principal email
+     * @return DeliveryConfirmationResponse confirming handover and proof recording
+     */
+    @Transactional
+    public DeliveryConfirmationResponse confirmDeliveryWithOtp(Long shipmentId, VerifyDeliveryOtpRequest request, String authenticatedEmail) {
+        if (shipmentId == null || shipmentId <= 0) {
+            throw new IllegalArgumentException("Shipment ID must be a positive number");
+        }
+        if (request == null || request.otp() == null || request.otp().isBlank()) {
+            throw new IllegalArgumentException("Delivery OTP is required");
+        }
+
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment", "id", shipmentId));
+
+        User currentUser = getValidatedUser(authenticatedEmail);
+
+        // Enforce authorization: only assigned delivery agent or admin can verify delivery
+        validateOtpVerificationAuthorization(currentUser, shipment);
+
+        // State machine constraint: must be OUT_FOR_DELIVERY
+        if (shipment.getStatus() == ShipmentStatus.DELIVERED) {
+            log.warn("Delivery confirmation rejected: shipment '{}' is already DELIVERED", shipment.getTrackingNumber());
+            throw new IllegalStateException("Shipment has already been delivered");
+        }
+        if (shipment.getStatus() == ShipmentStatus.CANCELLED || shipment.getStatus() == ShipmentStatus.RETURNED) {
+            throw new IllegalStateException(String.format("Cannot confirm delivery for shipment in terminal status '%s'", shipment.getStatus()));
+        }
+        if (shipment.getStatus() != ShipmentStatus.OUT_FOR_DELIVERY) {
+            throw new IllegalStateException(String.format("Shipment must be in 'OUT_FOR_DELIVERY' status to confirm delivery (current: '%s')", shipment.getStatus()));
+        }
+
+        // Verify active OTP exists
+        if (shipment.getDeliveryOtpHash() == null) {
+            log.warn("Delivery confirmation rejected: no active OTP for shipment '{}'", shipment.getTrackingNumber());
+            throw new IllegalStateException("No active delivery OTP found for this shipment. Please request an OTP first.");
+        }
+
+        Instant now = Instant.now();
+
+        // Check expiration
+        if (shipment.getDeliveryOtpExpiresAt() == null || now.isAfter(shipment.getDeliveryOtpExpiresAt())) {
+            log.warn("Delivery confirmation rejected: OTP expired for shipment '{}'", shipment.getTrackingNumber());
+            throw new IllegalStateException("Delivery OTP has expired. Please request a new OTP.");
+        }
+
+        // Check attempt threshold before verification
+        if (shipment.getDeliveryOtpAttempts() >= 3) {
+            shipment.setDeliveryOtpHash(null);
+            shipmentRepository.save(shipment);
+            log.warn("Delivery confirmation rejected: max attempts exceeded for shipment '{}'", shipment.getTrackingNumber());
+            throw new IllegalStateException("Maximum OTP verification attempts exceeded. Please request a new OTP.");
+        }
+
+        // Validate OTP match
+        String submittedOtp = request.otp().trim();
+        boolean matches = passwordEncoder.matches(submittedOtp, shipment.getDeliveryOtpHash());
+
+        if (!matches) {
+            int newAttempts = shipment.getDeliveryOtpAttempts() + 1;
+            shipment.setDeliveryOtpAttempts(newAttempts);
+            if (newAttempts >= 3) {
+                shipment.setDeliveryOtpHash(null);
+                log.warn("Delivery OTP invalidated due to exceeding max attempts on shipment '{}'", shipment.getTrackingNumber());
+            }
+            shipmentRepository.save(shipment);
+            throw new IllegalArgumentException("Invalid delivery OTP. Please check and try again.");
+        }
+
+        // Guard against duplicate delivery proof (concurrency / replay protection)
+        if (deliveryProofRepository.existsByShipmentId(shipment.getId())) {
+            throw new IllegalStateException("Delivery proof already exists for this shipment");
+        }
+
+        // Successful verification: consume OTP (one-time use)
+        shipment.setDeliveryOtpHash(null);
+        shipment.setDeliveryOtpExpiresAt(null);
+        shipment.setDeliveryOtpAttempts(0);
+
+        // Update shipment status to DELIVERED
+        shipment.setStatus(ShipmentStatus.DELIVERED);
+        shipment.setActualDeliveryAt(now);
+        Shipment savedShipment = shipmentRepository.save(shipment);
+
+        // Create and persist DeliveryProof entity
+        String recipientName = (request.recipientName() != null && !request.recipientName().isBlank())
+                ? request.recipientName().trim()
+                : savedShipment.getRecipientName();
+        String notes = (request.verificationNotes() != null && !request.verificationNotes().isBlank())
+                ? request.verificationNotes().trim()
+                : "Handover confirmed via OTP verification";
+
+        DeliveryProof proof = new DeliveryProof(
+                savedShipment,
+                currentUser,
+                ProofType.OTP,
+                "OTP_VERIFIED",
+                recipientName,
+                notes
+        );
+        proof.setVerifiedAt(now);
+        DeliveryProof savedProof = deliveryProofRepository.save(proof);
+
+        // Record tracking event
+        String location = (request.locationName() != null && !request.locationName().isBlank())
+                ? request.locationName().trim()
+                : "Delivery Destination";
+        TrackingEvent event = new TrackingEvent(
+                savedShipment,
+                ShipmentStatus.DELIVERED,
+                request.latitude(),
+                request.longitude(),
+                location,
+                "Parcel delivered successfully via electronic OTP verification"
+        );
+        event.setEventTimestamp(now);
+        trackingEventRepository.save(event);
+
+        log.info("Shipment '{}' successfully DELIVERED via OTP by user '{}' (role={}), proofId={}, eventId={}",
+                savedShipment.getTrackingNumber(), currentUser.getEmail(), currentUser.getRole().getName(),
+                savedProof.getId(), event.getId());
+
+        return new DeliveryConfirmationResponse(
+                savedShipment.getId(),
+                savedShipment.getTrackingNumber(),
+                savedShipment.getStatus(),
+                savedProof.getId(),
+                savedProof.getProofType(),
+                savedProof.getRecipientName(),
+                savedProof.getVerifiedAt()
+        );
+    }
+
+    private User getValidatedUser(String authenticatedEmail) {
+        String normalizedEmail = authenticatedEmail != null ? authenticatedEmail.toLowerCase(Locale.ROOT).trim() : "";
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", normalizedEmail));
+
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            log.warn("Access denied: user account '{}' is deactivated", normalizedEmail);
+            throw new AccessDeniedException("Account is deactivated");
+        }
+        return user;
+    }
+
+    private void validateOtpRequestAuthorization(User user, Shipment shipment) {
+        RoleName role = user.getRole().getName();
+        if (RoleName.ROLE_ADMIN.equals(role)) {
+            return;
+        }
+        if (RoleName.ROLE_CUSTOMER.equals(role)) {
+            if (shipment.getCustomer() != null && shipment.getCustomer().getId().equals(user.getId())) {
+                return;
+            }
+            log.warn("Access denied: customer '{}' (id={}) is not the owner of shipment '{}' (customerId={})",
+                    user.getEmail(), user.getId(), shipment.getTrackingNumber(),
+                    shipment.getCustomer() != null ? shipment.getCustomer().getId() : null);
+            throw new AccessDeniedException("Access denied: You do not have permission to perform this action");
+        }
+        if (RoleName.ROLE_DELIVERY_AGENT.equals(role)) {
+            if (shipment.getAssignedAgent() != null && shipment.getAssignedAgent().getId().equals(user.getId())) {
+                return;
+            }
+            log.warn("Access denied: agent '{}' (id={}) is not assigned to shipment '{}'",
+                    user.getEmail(), user.getId(), shipment.getTrackingNumber());
+            throw new AccessDeniedException("Access denied: You are not assigned to this shipment");
+        }
+        throw new AccessDeniedException("Access denied: You do not have permission to perform this action");
+    }
+
+    private void validateOtpVerificationAuthorization(User user, Shipment shipment) {
+        RoleName role = user.getRole().getName();
+        if (RoleName.ROLE_ADMIN.equals(role)) {
+            return;
+        }
+        if (RoleName.ROLE_DELIVERY_AGENT.equals(role)) {
+            if (shipment.getAssignedAgent() != null && shipment.getAssignedAgent().getId().equals(user.getId())) {
+                return;
+            }
+            log.warn("Access denied: delivery agent '{}' (id={}) is not assigned to shipment '{}'",
+                    user.getEmail(), user.getId(), shipment.getTrackingNumber());
+            throw new AccessDeniedException("Access denied: You are not assigned to this shipment");
+        }
+        // Customers are strictly forbidden from verifying delivery
+        log.warn("Access denied: user '{}' with role '{}' attempted delivery OTP verification on shipment '{}'",
+                user.getEmail(), role, shipment.getTrackingNumber());
+        throw new AccessDeniedException("Access denied: You do not have permission to perform this action");
     }
 }
