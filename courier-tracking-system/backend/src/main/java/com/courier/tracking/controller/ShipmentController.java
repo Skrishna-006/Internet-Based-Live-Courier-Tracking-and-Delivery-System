@@ -7,6 +7,9 @@ import com.courier.tracking.dto.DeliveryConfirmationResponse;
 import com.courier.tracking.dto.DeliveryOtpResponse;
 import com.courier.tracking.dto.LocationUpdateRequest;
 import com.courier.tracking.dto.LocationUpdateResponse;
+import com.courier.tracking.dto.PriceEstimateResponse;
+import com.courier.tracking.entity.ShipmentStatus;
+import java.math.BigDecimal;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.dto.UpdateShipmentStatusRequest;
 import com.courier.tracking.dto.VerifyDeliveryOtpRequest;
@@ -51,16 +54,31 @@ public class ShipmentController {
     }
 
     /**
-     * Endpoint allowing an authenticated customer to retrieve their paginated shipments.
+     * Endpoint providing server-authoritative shipping price estimate based on package weight.
+     * Enforces ROLE_CUSTOMER authority.
+     */
+    @GetMapping("/quote")
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    public ResponseEntity<ApiResponse<PriceEstimateResponse>> getPriceQuote(
+            @RequestParam("weightKg") BigDecimal weightKg
+    ) {
+        PriceEstimateResponse response = shipmentService.getPriceEstimate(weightKg);
+        return ResponseEntity.ok(ApiResponse.success("Price quote calculated successfully", response));
+    }
+
+    /**
+     * Endpoint allowing an authenticated customer to retrieve their paginated shipments,
+     * with optional status filtering.
      * Enforces ROLE_CUSTOMER authority via Spring Security.
      */
     @GetMapping
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     public ResponseEntity<ApiResponse<Page<ShipmentResponse>>> getCustomerShipments(
+            @RequestParam(value = "status", required = false) ShipmentStatus status,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication
     ) {
-        Page<ShipmentResponse> response = shipmentService.getCustomerShipments(authentication.getName(), pageable);
+        Page<ShipmentResponse> response = shipmentService.getCustomerShipments(authentication.getName(), status, pageable);
         return ResponseEntity.ok(ApiResponse.success("Shipments retrieved successfully", response));
     }
 

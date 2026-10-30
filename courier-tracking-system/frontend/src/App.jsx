@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { Package, MapPin, Shield, Navigation, LogIn, UserPlus, LogOut, User as UserIcon } from 'lucide-react';
+import { Package, MapPin, Shield, Navigation, LogIn, UserPlus, LogOut, User as UserIcon, PlusCircle } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
@@ -8,6 +8,8 @@ import PublicTrackingPage from './pages/PublicTrackingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
+import CustomerDashboardPage from './pages/CustomerDashboardPage';
+import BookingPage from './pages/BookingPage';
 import PlaceholderDashboard from './pages/PlaceholderDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -81,6 +83,16 @@ function NavigationBar() {
               >
                 {getRoleDashboardLink(user.role).label}
               </Link>
+
+              {user.role === 'ROLE_CUSTOMER' && (
+                <Link
+                  to="/customer/book"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors border border-indigo-200"
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Book Shipment</span>
+                </Link>
+              )}
 
               {/* User Identity & Role Badge */}
               <div className="flex items-center gap-2 pl-1 border-l border-slate-200">
@@ -158,12 +170,16 @@ export default function App() {
               path="/customer/dashboard"
               element={
                 <ProtectedRoute allowedRoles={['ROLE_CUSTOMER']}>
-                  <PlaceholderDashboard
-                    portalType="customer"
-                    title="Customer Consignment Portal"
-                    description="View active parcel consignments, book new shipments, and download shipping waybills."
-                    plannedFeature="Phase 6 — Feature 2: Customer Booking & Dashboard"
-                  />
+                  <CustomerDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/customer/book"
+              element={
+                <ProtectedRoute allowedRoles={['ROLE_CUSTOMER']}>
+                  <BookingPage />
                 </ProtectedRoute>
               }
             />

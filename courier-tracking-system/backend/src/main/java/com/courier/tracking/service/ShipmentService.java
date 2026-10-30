@@ -7,6 +7,7 @@ import com.courier.tracking.dto.DeliveryConfirmationResponse;
 import com.courier.tracking.dto.DeliveryOtpResponse;
 import com.courier.tracking.dto.LocationUpdateRequest;
 import com.courier.tracking.dto.LocationUpdateResponse;
+import com.courier.tracking.dto.PriceEstimateResponse;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.dto.UpdateShipmentStatusRequest;
 import com.courier.tracking.dto.VerifyDeliveryOtpRequest;
@@ -119,6 +120,28 @@ public class ShipmentService {
     }
 
     /**
+     * Calculates an authoritative delivery price estimate for a given package weight.
+     * Enforces weight boundaries (0.050kg to 1000.000kg) and returns quote details.
+     */
+    public PriceEstimateResponse getPriceEstimate(BigDecimal weightKg) {
+        if (weightKg == null) {
+            throw new IllegalArgumentException("Weight in kg is required for price estimate");
+        }
+        if (weightKg.compareTo(new BigDecimal("0.050")) < 0) {
+            throw new IllegalArgumentException("Package weight must be at least 0.050 kg (50g)");
+        }
+        if (weightKg.compareTo(new BigDecimal("1000.000")) > 0) {
+            throw new IllegalArgumentException("Package weight cannot exceed 1000.000 kg");
+        }
+        BigDecimal price = calculatePrice(weightKg);
+        String currency = pricingProperties.getCurrency() != null ? pricingProperties.getCurrency().toUpperCase(Locale.ROOT).trim() : "USD";
+        BigDecimal baseRate = pricingProperties.getBaseRate() != null ? pricingProperties.getBaseRate() : new BigDecimal("10.00");
+        BigDecimal perKgRate = pricingProperties.getPerKgRate() != null ? pricingProperties.getPerKgRate() : new BigDecimal("5.00");
+
+        return new PriceEstimateResponse(weightKg, price, currency, baseRate, perKgRate);
+    }
+
+    /**
      * Creates a new shipment for the authenticated customer.
      * Enforces customer role verification, server-side tracking number generation,
      * status initialization to CREATED, and server-side pricing calculation.
@@ -168,7 +191,7 @@ public class ShipmentService {
      * Enforces customer role verification and active account status.
      */
     @Transactional(readOnly = true)
-    public Page<ShipmentResponse> getCustomerShipments(String authenticatedEmail, Pageable pageable) {
+    public Page<ShipmentResponse> getCustomerShipments(String authenticatedEmail, ShipmentStatus status, Pageable pageable) {
         User customer = getValidatedCustomer(authenticatedEmail);
 
         Pageable effectivePageable = pageable;
@@ -178,8 +201,18 @@ public class ShipmentService {
             effectivePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
         }
 
-        Page<Shipment> shipments = shipmentRepository.findByCustomerId(customer.getId(), effectivePageable);
+        Page<Shipment> shipments;
+        if (status != null) {
+            shipments = shipmentRepository.findByCustomerIdAndStatus(customer.getId(), status, effectivePageable);
+        } else {
+            shipments = shipmentRepository.findByCustomerId(customer.getId(), effectivePageable);
+        }
         return shipments.map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ShipmentResponse> getCustomerShipments(String authenticatedEmail, Pageable pageable) {
+        return getCustomerShipments(authenticatedEmail, null, pageable);
     }
 
     /**

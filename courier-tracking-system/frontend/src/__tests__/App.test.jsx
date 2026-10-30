@@ -32,6 +32,22 @@ vi.mock('../services/api', () => ({
     getPublicTracking: vi.fn().mockResolvedValue({ data: null }),
     getPublicLiveLocation: vi.fn().mockResolvedValue({ data: null }),
   },
+  shipmentService: {
+    getPriceQuote: vi.fn().mockResolvedValue({ data: null }),
+    createShipment: vi.fn().mockResolvedValue({ data: null }),
+    getCustomerShipments: vi.fn().mockResolvedValue({
+      success: true,
+      data: {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        number: 0,
+        first: true,
+        last: true,
+      },
+    }),
+    getShipmentById: vi.fn().mockResolvedValue({ data: null }),
+  },
 }));
 
 describe('App Routing & Authentication Integration', () => {
@@ -214,6 +230,60 @@ describe('App Routing & Authentication Integration', () => {
     });
 
     expect(localStorage.getItem('token')).toBeNull();
+  });
+
+  it('allows authenticated customer to access /customer/dashboard and /customer/book', async () => {
+    const futureTimestamp = Math.floor(Date.now() / 1000) + 3600;
+    const token = createMockToken({
+      sub: 'customer@example.com',
+      userId: 10,
+      role: 'ROLE_CUSTOMER',
+      exp: futureTimestamp,
+    });
+    localStorage.setItem('token', token);
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: 10,
+        email: 'customer@example.com',
+        fullName: 'Jane Customer',
+        role: 'ROLE_CUSTOMER',
+      })
+    );
+
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/customer/dashboard']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('My Shipments')).toBeInTheDocument();
+    });
+
+    unmount();
+
+    render(
+      <MemoryRouter initialEntries={['/customer/book']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Book Courier Shipment')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects unauthenticated user accessing /customer/book to /login', async () => {
+    render(
+      <MemoryRouter initialEntries={['/customer/book']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Sign In to SwiftTrack')).toBeInTheDocument();
+    });
   });
 
   it('renders not found page on unknown route', () => {

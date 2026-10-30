@@ -361,4 +361,79 @@ class ShipmentRetrievalTests {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false));
     }
+
+    @Test
+    @DisplayName("12. Calculate price quote returns 200 with authoritative pricing estimate")
+    void testGetPriceQuoteSuccess() throws Exception {
+        mockMvc.perform(get("/api/v1/shipments/quote")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .param("weightKg", "2.500"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.weightKg").value(2.5))
+                .andExpect(jsonPath("$.data.price").value(22.50))
+                .andExpect(jsonPath("$.data.currency").value("USD"))
+                .andExpect(jsonPath("$.data.baseRate").value(10.00))
+                .andExpect(jsonPath("$.data.perKgRate").value(5.00));
+    }
+
+    @Test
+    @DisplayName("13. Calculate price quote rejects invalid weight values with 400 Bad Request")
+    void testGetPriceQuoteInvalidWeight() throws Exception {
+        // Below minimum weight (< 0.050 kg)
+        mockMvc.perform(get("/api/v1/shipments/quote")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .param("weightKg", "0.010"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+
+        // Above maximum weight (> 1000.000 kg)
+        mockMvc.perform(get("/api/v1/shipments/quote")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .param("weightKg", "1001.000"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("14. Filter customer shipments by status returns only shipments with matching status")
+    void testFilterCustomerShipmentsByStatus() throws Exception {
+        Shipment s1 = createShipment(customerUser, "STAT-1", new BigDecimal("1.000"), new BigDecimal("15.00"));
+        Shipment s2 = createShipment(customerUser, "STAT-2", new BigDecimal("2.000"), new BigDecimal("20.00"));
+        s2.setStatus(ShipmentStatus.OUT_FOR_DELIVERY);
+        shipmentRepository.save(s2);
+
+        // Filter by OUT_FOR_DELIVERY
+        mockMvc.perform(get("/api/v1/shipments")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .param("status", "OUT_FOR_DELIVERY"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].trackingNumber").value(s2.getTrackingNumber()))
+                .andExpect(jsonPath("$.data.content[0].status").value("OUT_FOR_DELIVERY"));
+
+        // Filter by CREATED
+        mockMvc.perform(get("/api/v1/shipments")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .param("status", "CREATED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].trackingNumber").value(s1.getTrackingNumber()))
+                .andExpect(jsonPath("$.data.content[0].status").value("CREATED"));
+    }
+
+    @Test
+    @DisplayName("15. Filter customer shipments by status returns empty page when no matches exist")
+    void testFilterCustomerShipmentsByStatusEmpty() throws Exception {
+        createShipment(customerUser, "STAT-3", new BigDecimal("1.000"), new BigDecimal("15.00"));
+
+        mockMvc.perform(get("/api/v1/shipments")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .param("status", "DELIVERED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(0))
+                .andExpect(jsonPath("$.data.content", hasSize(0)));
+    }
 }

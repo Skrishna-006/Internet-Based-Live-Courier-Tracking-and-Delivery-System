@@ -29,6 +29,8 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     Page<Shipment> findByCustomerId(Long customerId, Pageable pageable);
 
+    Page<Shipment> findByCustomerIdAndStatus(Long customerId, ShipmentStatus status, Pageable pageable);
+
     List<Shipment> findByAssignedAgentIdOrderByCreatedAtDesc(Long assignedAgentId);
 
     List<Shipment> findByAssignedAgentIdAndStatus(Long assignedAgentId, ShipmentStatus status);

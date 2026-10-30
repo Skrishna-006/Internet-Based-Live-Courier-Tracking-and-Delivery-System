@@ -52,4 +52,15 @@ export const trackingService = {
     api.get(`/tracking/public/${encodeURIComponent(trackingNumber)}/location`),
 };
 
+export const shipmentService = {
+  getPriceQuote: (weightKg) =>
+    api.get('/shipments/quote', { params: { weightKg } }),
+  createShipment: (shipmentData) =>
+    api.post('/shipments', shipmentData),
+  getCustomerShipments: (params = {}) =>
+    api.get('/shipments', { params }),
+  getShipmentById: (id) =>
+    api.get(`/shipments/${id}`),
+};
+
 export default api;
