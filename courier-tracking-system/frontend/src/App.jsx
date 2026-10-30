@@ -1,7 +1,8 @@
 import React from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import { Package, MapPin, Shield, Layers } from 'lucide-react';
+import { Package, MapPin, Shield, Layers, Navigation } from 'lucide-react';
 import LandingPage from './pages/LandingPage';
+import PublicTrackingPage from './pages/PublicTrackingPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -25,9 +26,16 @@ export default function App() {
           </Link>
 
           <nav className="flex items-center gap-4 text-xs font-semibold text-slate-600">
+            <Link
+              to="/track"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
+            >
+              <Navigation className="w-3.5 h-3.5 text-indigo-600" />
+              Live Tracking
+            </Link>
             <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
               <Layers className="w-3.5 h-3.5 text-blue-500" />
-              Phase 1 Baseline
+              Phase 5 Live Telemetry
             </span>
           </nav>
         </div>
@@ -37,6 +45,8 @@ export default function App() {
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/track" element={<PublicTrackingPage />} />
+          <Route path="/track/:trackingNumber" element={<PublicTrackingPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

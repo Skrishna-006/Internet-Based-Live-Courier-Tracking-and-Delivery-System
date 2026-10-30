@@ -8,6 +8,22 @@ const api = axios.create({
   timeout: 10000,
 });
 
+// Request interceptor for JWT authentication if present
+api.interceptors.request.use(
+  (config) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch {
+      // In SSR or non-standard environments
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Interceptor for uniform response unwrapping & error handling
 api.interceptors.response.use(
   (response) => response.data,
@@ -22,6 +38,13 @@ api.interceptors.response.use(
 
 export const systemService = {
   getHealth: () => api.get('/health'),
+};
+
+export const trackingService = {
+  getPublicTracking: (trackingNumber) =>
+    api.get(`/tracking/public/${encodeURIComponent(trackingNumber)}`),
+  getPublicLiveLocation: (trackingNumber) =>
+    api.get(`/tracking/public/${encodeURIComponent(trackingNumber)}/location`),
 };
 
 export default api;

@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, ShieldCheck, Activity, CheckCircle2, AlertCircle, ArrowRight, RefreshCw, Radio } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Package,
+  Truck,
+  ShieldCheck,
+  Activity,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  RefreshCw,
+  Radio,
+  Search,
+} from 'lucide-react';
 import { systemService } from '../services/api';
 
 export default function LandingPage() {
   const [healthData, setHealthData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [trackingInput, setTrackingInput] = useState('');
+  const navigate = useNavigate();
 
   const checkBackendHealth = async () => {
     setLoading(true);
@@ -24,13 +38,20 @@ export default function LandingPage() {
     checkBackendHealth();
   }, []);
 
+  const handleTrackSubmit = (e) => {
+    e.preventDefault();
+    if (trackingInput.trim()) {
+      navigate(`/track/${encodeURIComponent(trackingInput.trim().toUpperCase())}`);
+    }
+  };
+
   return (
     <div className="space-y-12 pb-16">
       {/* Hero Section */}
       <section className="text-center space-y-4 pt-6 max-w-3xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold uppercase tracking-wider">
           <Activity className="w-3.5 h-3.5 animate-pulse text-blue-600" />
-          Phase 1 — Architecture & Project Foundation
+          Phase 5 — Live Telemetry & Tracking Map
         </div>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
           Internet-Based Live Courier Tracking & Delivery System
@@ -39,6 +60,26 @@ export default function LandingPage() {
           High-performance, event-driven logistics platform featuring real-time GPS telemetry,
           state-machine consignment tracking, and role-governed dispatching.
         </p>
+
+        {/* Hero Quick Tracking Form */}
+        <div className="pt-4 max-w-lg mx-auto">
+          <form onSubmit={handleTrackSubmit} className="relative flex items-center shadow-lg rounded-2xl">
+            <Search className="absolute left-4 w-5 h-5 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={trackingInput}
+              onChange={(e) => setTrackingInput(e.target.value)}
+              placeholder="Track package (e.g. TRK-20261026-ABCD)"
+              className="w-full pl-12 pr-28 py-4 rounded-2xl bg-white text-slate-900 placeholder-slate-400 font-medium text-sm border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              className="absolute right-2.5 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
+            >
+              Track Live
+            </button>
+          </form>
+        </div>
       </section>
 
       {/* Backend Connectivity Status Widget */}
@@ -100,18 +141,23 @@ export default function LandingPage() {
 
       {/* Role Architecture Cards */}
       <section className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-3 shadow-sm hover:border-blue-300 transition-all">
+        <Link
+          to="/track"
+          className="bg-white rounded-xl border border-slate-200 p-6 space-y-3 shadow-sm hover:border-blue-400 hover:shadow-md transition-all group block"
+        >
           <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
             <Package className="w-5 h-5" />
           </div>
-          <h3 className="text-lg font-bold text-slate-900">Customer Portal</h3>
+          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+            Live Consignment Tracking
+          </h3>
           <p className="text-sm text-slate-600 leading-relaxed">
             Consignment booking, instant waybill generation, public tracking lookup with privacy masking, and live milestone updates.
           </p>
           <div className="pt-2 text-xs font-semibold text-blue-600 inline-flex items-center gap-1">
-            Planned for Phase 4 <ArrowRight className="w-3 h-3" />
+            Open Live Map <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
           </div>
-        </div>
+        </Link>
 
         <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-3 shadow-sm hover:border-emerald-300 transition-all">
           <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
@@ -122,7 +168,7 @@ export default function LandingPage() {
             Mobile-optimized dispatch run, throttled GPS location broadcasting, proof-of-delivery (OTP/Signature) validation.
           </p>
           <div className="pt-2 text-xs font-semibold text-emerald-600 inline-flex items-center gap-1">
-            Planned for Phase 5 <ArrowRight className="w-3 h-3" />
+            Active Feature <CheckCircle2 className="w-3 h-3" />
           </div>
         </div>
 
@@ -143,36 +189,36 @@ export default function LandingPage() {
       {/* Engineering Foundations Matrix */}
       <section className="bg-slate-900 text-white rounded-2xl p-8 max-w-5xl mx-auto space-y-6">
         <div>
-          <h2 className="text-xl font-bold">Phase 1 Foundation Checklist</h2>
-          <p className="text-slate-400 text-sm">Architectural guarantees strictly verified and established.</p>
+          <h2 className="text-xl font-bold">Phase 5 Real-Time Telemetry & Tracking Map</h2>
+          <p className="text-slate-400 text-sm">Leaflet OpenStreetMap, STOMP WebSockets, and polling fallback verified.</p>
         </div>
         <div className="grid sm:grid-cols-2 gap-4 text-sm">
           <div className="flex items-start gap-3 bg-slate-800/80 p-4 rounded-xl border border-slate-700">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold block text-slate-100">Layered Modular Monolith</span>
-              <span className="text-slate-400 text-xs">Strict separation of controllers, services, repositories, DTOs, and error handlers.</span>
+              <span className="font-semibold block text-slate-100">Leaflet & OpenStreetMap Visualization</span>
+              <span className="text-slate-400 text-xs">Smooth vector markers, directional bearing indicator, and responsive container.</span>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-slate-800/80 p-4 rounded-xl border border-slate-700">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold block text-slate-100">Spring Boot 3.4 & Java 21</span>
-              <span className="text-slate-400 text-xs">Tested bytecode compilation using modern release 21 target with JUnit 5.</span>
+              <span className="font-semibold block text-slate-100">STOMP Real-Time Broadcasting</span>
+              <span className="text-slate-400 text-xs">Subscribes to `/topic/track/{'{'}trackingNumber{'}'}` with JWT authentication where required.</span>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-slate-800/80 p-4 rounded-xl border border-slate-700">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold block text-slate-100">Flyway Database Versioning</span>
-              <span className="text-slate-400 text-xs">Immutable SQL migrations preventing unpredictable hibernate auto-mutations.</span>
+              <span className="font-semibold block text-slate-100">Automated Polling Fallback</span>
+              <span className="text-slate-400 text-xs">Seamless failover to `/api/v1/tracking/public/{'{'}trackingNumber{'}'}/location` on disconnect.</span>
             </div>
           </div>
           <div className="flex items-start gap-3 bg-slate-800/80 p-4 rounded-xl border border-slate-700">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-semibold block text-slate-100">React + Vite + Tailwind CSS</span>
-              <span className="text-slate-400 text-xs">High-speed development HMR, reverse-proxy routing, and zero coupled logic.</span>
+              <span className="font-semibold block text-slate-100">PII & Privacy Protection</span>
+              <span className="text-slate-400 text-xs">Masked customer phone, address, and agent contact info strictly upheld.</span>
             </div>
           </div>
         </div>
