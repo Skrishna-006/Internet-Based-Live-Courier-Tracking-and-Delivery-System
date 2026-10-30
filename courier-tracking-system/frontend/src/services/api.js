@@ -40,6 +40,11 @@ export const systemService = {
   getHealth: () => api.get('/health'),
 };
 
+export const authService = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  registerCustomer: (registrationData) => api.post('/auth/register', registrationData),
+};
+
 export const trackingService = {
   getPublicTracking: (trackingNumber) =>
     api.get(`/tracking/public/${encodeURIComponent(trackingNumber)}`),
