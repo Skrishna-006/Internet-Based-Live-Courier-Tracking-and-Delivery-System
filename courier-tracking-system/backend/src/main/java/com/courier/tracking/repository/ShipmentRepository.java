@@ -5,6 +5,7 @@ import com.courier.tracking.entity.ShipmentStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +19,9 @@ import java.util.Optional;
 public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     Optional<Shipment> findByTrackingNumber(String trackingNumber);
+
+    @EntityGraph(attributePaths = {"customer"})
+    Optional<Shipment> findWithCustomerByTrackingNumber(String trackingNumber);
 
     boolean existsByTrackingNumber(String trackingNumber);
 

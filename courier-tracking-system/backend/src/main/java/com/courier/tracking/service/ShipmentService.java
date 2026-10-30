@@ -59,18 +59,28 @@ public class ShipmentService {
     private final TrackingEventRepository trackingEventRepository;
     private final DeliveryProofRepository deliveryProofRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LocationBroadcastService locationBroadcastService;
 
     public ShipmentService(ShipmentRepository shipmentRepository,
                            UserRepository userRepository,
                            PricingProperties pricingProperties) {
-        this(shipmentRepository, userRepository, pricingProperties, null, null, null);
+        this(shipmentRepository, userRepository, pricingProperties, null, null, null, null);
     }
 
     public ShipmentService(ShipmentRepository shipmentRepository,
                            UserRepository userRepository,
                            PricingProperties pricingProperties,
                            TrackingEventRepository trackingEventRepository) {
-        this(shipmentRepository, userRepository, pricingProperties, trackingEventRepository, null, null);
+        this(shipmentRepository, userRepository, pricingProperties, trackingEventRepository, null, null, null);
+    }
+
+    public ShipmentService(ShipmentRepository shipmentRepository,
+                           UserRepository userRepository,
+                           PricingProperties pricingProperties,
+                           TrackingEventRepository trackingEventRepository,
+                           DeliveryProofRepository deliveryProofRepository,
+                           PasswordEncoder passwordEncoder) {
+        this(shipmentRepository, userRepository, pricingProperties, trackingEventRepository, deliveryProofRepository, passwordEncoder, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -79,13 +89,14 @@ public class ShipmentService {
                            PricingProperties pricingProperties,
                            TrackingEventRepository trackingEventRepository,
                            DeliveryProofRepository deliveryProofRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder, LocationBroadcastService locationBroadcastService) {
         this.shipmentRepository = shipmentRepository;
         this.userRepository = userRepository;
         this.pricingProperties = pricingProperties;
         this.trackingEventRepository = trackingEventRepository;
         this.deliveryProofRepository = deliveryProofRepository;
         this.passwordEncoder = passwordEncoder;
+        this.locationBroadcastService = locationBroadcastService;
     }
 
     /**
@@ -867,6 +878,10 @@ public class ShipmentService {
         log.info("Live telemetry accepted for shipmentId={} trackingNumber='{}' by agent='{}'",
                 saved.getId(), saved.getTrackingNumber(), currentUser.getEmail());
 
+        if (locationBroadcastService != null) {
+            locationBroadcastService.broadcastLocationUpdate(saved, request, serverNow);
+        }
+
         return new LocationUpdateResponse(
                 saved.getId(),
                 saved.getTrackingNumber(),
@@ -887,3 +902,5 @@ public class ShipmentService {
         return R * c;
     }
 }
+
+
