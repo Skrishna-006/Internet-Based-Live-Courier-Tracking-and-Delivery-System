@@ -1,6 +1,7 @@
 package com.courier.tracking.controller;
 
 import com.courier.tracking.dto.ApiResponse;
+import com.courier.tracking.dto.PublicLiveLocationResponse;
 import com.courier.tracking.dto.PublicTrackingResponse;
 import com.courier.tracking.service.TrackingService;
 import org.springframework.http.ResponseEntity;
@@ -36,5 +37,20 @@ public class TrackingController {
     ) {
         PublicTrackingResponse response = trackingService.getPublicTrackingSummary(trackingNumber);
         return ResponseEntity.ok(ApiResponse.success("Tracking summary retrieved successfully", response));
+    }
+
+    /**
+     * Retrieves the latest public live location of an active shipment for polling fallback.
+     * Open to any client without requiring authentication.
+     *
+     * @param trackingNumber The public parcel consignment tracking number
+     * @return Public live location details wrapped in standard ApiResponse envelope
+     */
+    @GetMapping("/public/{trackingNumber}/location")
+    public ResponseEntity<ApiResponse<PublicLiveLocationResponse>> getPublicLiveLocation(
+            @PathVariable String trackingNumber
+    ) {
+        PublicLiveLocationResponse response = trackingService.getPublicLiveLocation(trackingNumber);
+        return ResponseEntity.ok(ApiResponse.success("Live location retrieved successfully", response));
     }
 }
