@@ -5,6 +5,8 @@ import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.DeliveryConfirmationResponse;
 import com.courier.tracking.dto.DeliveryOtpResponse;
+import com.courier.tracking.dto.LocationUpdateRequest;
+import com.courier.tracking.dto.LocationUpdateResponse;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.dto.UpdateShipmentStatusRequest;
 import com.courier.tracking.dto.VerifyDeliveryOtpRequest;
@@ -134,5 +136,22 @@ public class ShipmentController {
     ) {
         DeliveryConfirmationResponse response = shipmentService.confirmDeliveryWithOtp(id, request, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Delivery confirmed successfully", response));
+    }
+
+    /**
+     * Endpoint allowing the assigned delivery agent to ingest live GPS location telemetry
+     * for a shipment in OUT_FOR_DELIVERY status.
+     * Enforces ROLE_DELIVERY_AGENT authority, coordinate validity, accuracy <= 30m,
+     * speed <= 140 km/h, freshness <= 60s, and 5s minimum update interval.
+     */
+    @PostMapping("/{id}/location")
+    @PreAuthorize("hasAuthority('ROLE_DELIVERY_AGENT')")
+    public ResponseEntity<ApiResponse<LocationUpdateResponse>> updateLocation(
+            @PathVariable Long id,
+            @Valid @RequestBody LocationUpdateRequest request,
+            Authentication authentication
+    ) {
+        LocationUpdateResponse response = shipmentService.updateLiveLocation(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Telemetry coordinates accepted successfully", response));
     }
 }

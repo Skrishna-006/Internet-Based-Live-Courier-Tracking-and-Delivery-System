@@ -5,6 +5,8 @@ import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.DeliveryConfirmationResponse;
 import com.courier.tracking.dto.DeliveryOtpResponse;
+import com.courier.tracking.dto.LocationUpdateRequest;
+import com.courier.tracking.dto.LocationUpdateResponse;
 import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.dto.UpdateShipmentStatusRequest;
 import com.courier.tracking.dto.VerifyDeliveryOtpRequest;
@@ -751,5 +753,137 @@ public class ShipmentService {
         log.warn("Access denied: user '{}' with role '{}' attempted delivery OTP verification on shipment '{}'",
                 user.getEmail(), role, shipment.getTrackingNumber());
         throw new AccessDeniedException("Access denied: You do not have permission to perform this action");
+    }
+
+    /**
+     * Ingests and validates live GPS telemetry emitted by the assigned delivery agent.
+     * Enforces role authority, agent assignment verification, OUT_FOR_DELIVERY state machine guard,
+     * coordinate bounds, accuracy <= 30m, speed <= 140 km/h, freshness <= 60s,
+     * 5-second minimum interval rate limiting with pessimistic lock concurrency safety,
+     * and implausible movement / speed spike detection.
+     *
+     * @param shipmentId Database ID of the target consignment
+     * @param request Inbound GPS telemetry payload
+     * @param authenticatedEmail Authenticated agent email from SecurityContext
+     * @return LocationUpdateResponse containing accepted coordinates and server timestamp
+     */
+    @Transactional
+    public LocationUpdateResponse updateLiveLocation(Long shipmentId, LocationUpdateRequest request, String authenticatedEmail) {
+        if (shipmentId == null || shipmentId <= 0) {
+            throw new IllegalArgumentException("Shipment ID must be a positive number");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("Location update request payload is required");
+        }
+        if (request.latitude() == null || request.longitude() == null) {
+            throw new IllegalArgumentException("Latitude and longitude coordinates are required");
+        }
+        if (request.latitude().compareTo(BigDecimal.valueOf(-90)) < 0 || request.latitude().compareTo(BigDecimal.valueOf(90)) > 0) {
+            throw new IllegalArgumentException("Latitude must be between -90.0 and 90.0 degrees");
+        }
+        if (request.longitude().compareTo(BigDecimal.valueOf(-180)) < 0 || request.longitude().compareTo(BigDecimal.valueOf(180)) > 0) {
+            throw new IllegalArgumentException("Longitude must be between -180.0 and 180.0 degrees");
+        }
+        if (request.accuracy() == null || request.accuracy().compareTo(BigDecimal.ZERO) < 0 || request.accuracy().compareTo(BigDecimal.valueOf(30.0)) > 0) {
+            throw new IllegalArgumentException("Location accuracy must be non-negative and no greater than 30.0 meters");
+        }
+        if (request.speed() != null && (request.speed().compareTo(BigDecimal.ZERO) < 0 || request.speed().compareTo(BigDecimal.valueOf(140.0)) > 0)) {
+            throw new IllegalArgumentException("Speed must be non-negative and no greater than 140.0 km/h");
+        }
+        if (request.timestamp() == null) {
+            throw new IllegalArgumentException("Timestamp is required");
+        }
+
+        Instant serverNow = Instant.now();
+        long diffSeconds = Math.abs(Duration.between(request.timestamp(), serverNow).getSeconds());
+        if (diffSeconds > 60) {
+            throw new IllegalArgumentException("Timestamp must be within ±60 seconds of server time (delta: " + diffSeconds + "s)");
+        }
+
+        User currentUser = getValidatedUser(authenticatedEmail);
+        if (!RoleName.ROLE_DELIVERY_AGENT.equals(currentUser.getRole().getName())) {
+            log.warn("Access denied: user '{}' with role '{}' attempted location ingestion", currentUser.getEmail(), currentUser.getRole().getName());
+            throw new AccessDeniedException("Access denied: Only delivery agents can submit live location telemetry");
+        }
+
+        Shipment shipment = shipmentRepository.findByIdForUpdate(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment", "id", shipmentId));
+
+        if (shipment.getAssignedAgent() == null || !shipment.getAssignedAgent().getId().equals(currentUser.getId())) {
+            log.warn("Access denied: agent '{}' (id={}) is not assigned to shipment '{}'",
+                    currentUser.getEmail(), currentUser.getId(), shipment.getTrackingNumber());
+            throw new AccessDeniedException("Access denied: You are not assigned to this shipment");
+        }
+
+        if (shipment.getStatus() == ShipmentStatus.DELIVERED) {
+            log.warn("Location ingestion rejected: shipment '{}' is already DELIVERED", shipment.getTrackingNumber());
+            throw new IllegalStateException("Cannot update location for a delivered shipment");
+        }
+        if (shipment.getStatus() == ShipmentStatus.CANCELLED || shipment.getStatus() == ShipmentStatus.RETURNED) {
+            throw new IllegalStateException(String.format("Cannot update location for shipment in terminal status '%s'", shipment.getStatus()));
+        }
+        if (shipment.getStatus() != ShipmentStatus.OUT_FOR_DELIVERY) {
+            throw new IllegalStateException(String.format("Location updates are only accepted when shipment is OUT_FOR_DELIVERY (current: '%s')", shipment.getStatus()));
+        }
+
+        // Server-side minimum 5-second interval between updates for the same shipment
+        if (shipment.getLastLocationUpdatedAt() != null) {
+            long millisSinceLast = Duration.between(shipment.getLastLocationUpdatedAt(), serverNow).toMillis();
+            if (millisSinceLast < 5000) {
+                log.warn("Location update throttled for shipment '{}' (delta: {}ms)", shipment.getTrackingNumber(), millisSinceLast);
+                throw new IllegalStateException("Location updates must be at least 5 seconds apart. Please wait before sending new telemetry.");
+            }
+        }
+
+        // Implausible movement and speed spike check when previous point exists
+        if (shipment.getCurrentLatitude() != null && shipment.getCurrentLongitude() != null && shipment.getLastLocationUpdatedAt() != null) {
+            double prevLat = shipment.getCurrentLatitude().doubleValue();
+            double prevLon = shipment.getCurrentLongitude().doubleValue();
+            double newLat = request.latitude().doubleValue();
+            double newLon = request.longitude().doubleValue();
+
+            double distanceMeters = calculateDistanceInMeters(prevLat, prevLon, newLat, newLon);
+            double elapsedSeconds = Duration.between(shipment.getLastLocationUpdatedAt(), serverNow).toMillis() / 1000.0;
+            if (elapsedSeconds > 0) {
+                double calculatedSpeedKmh = (distanceMeters / 1000.0) / (elapsedSeconds / 3600.0);
+                if (calculatedSpeedKmh > 140.0) {
+                    log.warn("Implausible movement detected for shipment '{}': distance={}m, time={}s, speed={} km/h",
+                            shipment.getTrackingNumber(), String.format(Locale.ROOT, "%.1f", distanceMeters),
+                            String.format(Locale.ROOT, "%.1f", elapsedSeconds), String.format(Locale.ROOT, "%.1f", calculatedSpeedKmh));
+                    throw new IllegalArgumentException(String.format(Locale.ROOT,
+                            "Implausible movement detected: calculated speed of %.1f km/h exceeds maximum threshold of 140.0 km/h",
+                            calculatedSpeedKmh));
+                }
+            }
+        }
+
+        // Store latest active location
+        shipment.setCurrentLatitude(request.latitude());
+        shipment.setCurrentLongitude(request.longitude());
+        shipment.setLastLocationUpdatedAt(serverNow);
+        Shipment saved = shipmentRepository.save(shipment);
+
+        // Avoid logging precise coordinates or PII
+        log.info("Live telemetry accepted for shipmentId={} trackingNumber='{}' by agent='{}'",
+                saved.getId(), saved.getTrackingNumber(), currentUser.getEmail());
+
+        return new LocationUpdateResponse(
+                saved.getId(),
+                saved.getTrackingNumber(),
+                saved.getCurrentLatitude(),
+                saved.getCurrentLongitude(),
+                serverNow
+        );
+    }
+
+    private double calculateDistanceInMeters(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371000; // Radius of the Earth in meters
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }

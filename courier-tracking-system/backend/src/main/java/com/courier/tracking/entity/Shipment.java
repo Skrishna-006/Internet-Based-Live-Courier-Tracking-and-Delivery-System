@@ -85,6 +85,15 @@ public class Shipment implements Serializable {
     @Column(name = "delivery_otp_last_sent_at")
     private Instant deliveryOtpLastSentAt;
 
+    @Column(name = "current_latitude", precision = 10, scale = 7)
+    private BigDecimal currentLatitude;
+
+    @Column(name = "current_longitude", precision = 10, scale = 7)
+    private BigDecimal currentLongitude;
+
+    @Column(name = "last_location_updated_at")
+    private Instant lastLocationUpdatedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -316,6 +325,30 @@ public class Shipment implements Serializable {
 
     public void setDeliveryOtpLastSentAt(Instant deliveryOtpLastSentAt) {
         this.deliveryOtpLastSentAt = deliveryOtpLastSentAt;
+    }
+
+    public BigDecimal getCurrentLatitude() {
+        return currentLatitude;
+    }
+
+    public void setCurrentLatitude(BigDecimal currentLatitude) {
+        this.currentLatitude = currentLatitude;
+    }
+
+    public BigDecimal getCurrentLongitude() {
+        return currentLongitude;
+    }
+
+    public void setCurrentLongitude(BigDecimal currentLongitude) {
+        this.currentLongitude = currentLongitude;
+    }
+
+    public Instant getLastLocationUpdatedAt() {
+        return lastLocationUpdatedAt;
+    }
+
+    public void setLastLocationUpdatedAt(Instant lastLocationUpdatedAt) {
+        this.lastLocationUpdatedAt = lastLocationUpdatedAt;
     }
 
     public Instant getCreatedAt() {
