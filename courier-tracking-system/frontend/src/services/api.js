@@ -63,6 +63,12 @@ export const shipmentService = {
     api.get(`/shipments/${id}`),
   updateStatus: (id, statusData) =>
     api.patch(`/shipments/${id}/status`, statusData),
+  sendLiveLocation: (id, locationData) =>
+    api.post(`/shipments/${id}/location`, locationData),
+  generateDeliveryOtp: (id) =>
+    api.post(`/shipments/${id}/delivery-otp`),
+  verifyDeliveryOtp: (id, verificationData) =>
+    api.post(`/shipments/${id}/delivery/verify-otp`, verificationData),
 };
 
 export const agentService = {

@@ -70,6 +70,18 @@ vi.mock('../services/api', () => ({
         completed: 0,
       },
     }),
+    getAssignmentById: vi.fn().mockResolvedValue({
+      success: true,
+      data: {
+        id: 101,
+        trackingNumber: 'TRK-20261031-DELIV01',
+        status: 'OUT_FOR_DELIVERY',
+        recipientName: 'Robert Vance',
+        recipientAddress: '100 Industrial Pkwy',
+        recipientPhone: '+1-555-0199',
+        weightKg: 4.2,
+      },
+    }),
   },
 }));
 
@@ -346,6 +358,36 @@ describe('App Routing & Authentication Integration', () => {
       expect(screen.getByTestId('driver-portal-title')).toHaveTextContent('Delivery Agent Route Portal');
       expect(screen.getByTestId('navbar-user-name')).toHaveTextContent('Dave Driver');
       expect(screen.getByTestId('navbar-role-badge')).toHaveTextContent('Agent');
+    });
+  });
+
+  it('allows authenticated delivery agent to access /driver/delivery/:id delivery run mode', async () => {
+    const futureTimestamp = Math.floor(Date.now() / 1000) + 3600;
+    const token = createMockToken({
+      sub: 'driver@example.com',
+      userId: 55,
+      role: 'ROLE_DELIVERY_AGENT',
+      exp: futureTimestamp,
+    });
+    localStorage.setItem('token', token);
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: 55,
+        email: 'driver@example.com',
+        fullName: 'Dave Driver',
+        role: 'ROLE_DELIVERY_AGENT',
+      })
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/driver/delivery/101']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('delivery-mode-title')).toHaveTextContent('Active Delivery Run Mode');
     });
   });
 

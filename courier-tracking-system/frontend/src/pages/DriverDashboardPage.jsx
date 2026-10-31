@@ -691,11 +691,21 @@ export default function DriverDashboardPage() {
                         </div>
                       )}
 
-                      {/* Out For Delivery OTP Guidance */}
+                      {/* Out For Delivery Action & OTP Guidance */}
                       {shipment.status === 'OUT_FOR_DELIVERY' && (
-                        <div className="text-[11px] text-slate-500 bg-amber-50/70 border border-amber-200/70 px-2 py-1 rounded text-center sm:text-right">
-                          Delivery completion requires OTP verification
-                        </div>
+                        <>
+                          <Link
+                            to={`/driver/delivery/${shipment.id}`}
+                            data-testid={`delivery-mode-link-${shipment.id}`}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-all"
+                          >
+                            <Navigation className="w-3.5 h-3.5" />
+                            <span>Delivery Mode (GPS & OTP)</span>
+                          </Link>
+                          <div className="text-[11px] text-slate-500 bg-amber-50/70 border border-amber-200/70 px-2 py-1 rounded text-center sm:text-right">
+                            Delivery completion requires OTP verification
+                          </div>
+                        </>
                       )}
 
                       {/* Live Tracking Link */}

@@ -11,6 +11,7 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 import CustomerDashboardPage from './pages/CustomerDashboardPage';
 import BookingPage from './pages/BookingPage';
 import DriverDashboardPage from './pages/DriverDashboardPage';
+import DriverDeliveryPage from './pages/DriverDeliveryPage';
 import PlaceholderDashboard from './pages/PlaceholderDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -190,6 +191,15 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['ROLE_DELIVERY_AGENT']}>
                   <DriverDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/driver/delivery/:id"
+              element={
+                <ProtectedRoute allowedRoles={['ROLE_DELIVERY_AGENT']}>
+                  <DriverDeliveryPage />
                 </ProtectedRoute>
               }
             />

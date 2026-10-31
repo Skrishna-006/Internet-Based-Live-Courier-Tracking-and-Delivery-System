@@ -278,6 +278,7 @@ describe('DriverDashboardPage Component', () => {
       expect(screen.getByText('OTP Mode')).toBeInTheDocument();
       expect(screen.getByText(/Delivery completion requires OTP verification/i)).toBeInTheDocument();
       expect(screen.getByTestId('action-attempt_failed-102')).toBeInTheDocument();
+      expect(screen.getByTestId('delivery-mode-link-102')).toHaveAttribute('href', '/driver/delivery/102');
     });
   });
 
