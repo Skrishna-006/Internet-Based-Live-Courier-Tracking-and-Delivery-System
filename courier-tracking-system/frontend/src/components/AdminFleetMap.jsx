@@ -20,6 +20,9 @@ export const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
  */
 export function isValidCoordinate(lat, lon) {
   if (lat === null || lat === undefined || lon === null || lon === undefined) return false;
+  if (typeof lat === 'boolean' || typeof lon === 'boolean') return false;
+  if (typeof lat === 'string' && lat.trim() === '') return false;
+  if (typeof lon === 'string' && lon.trim() === '') return false;
   const numLat = Number(lat);
   const numLon = Number(lon);
   if (isNaN(numLat) || isNaN(numLon)) return false;
@@ -183,7 +186,7 @@ export default function AdminFleetMap({
                     {isStale ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                         <AlertTriangle className="w-3 h-3 text-amber-600" />
-                        Stale ({minutesAgo}m ago)
+                        Stale ({minutesAgo !== null ? `${minutesAgo}m ago` : 'telemetry'})
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">

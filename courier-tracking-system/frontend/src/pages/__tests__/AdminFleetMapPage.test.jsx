@@ -41,6 +41,8 @@ vi.mock('../../services/websocket', () => ({
 
 describe('AdminFleetMapPage Component', () => {
   let mockStompClient;
+  let mockUnsubscribe;
+  let capturedStompOptions;
   let stompSubscriptions = {};
 
   const sampleAdminUser = {
@@ -88,6 +90,16 @@ describe('AdminFleetMapPage Component', () => {
       activeDeliveriesCount: 0,
       deliveredShipmentsCount: 0,
     },
+    {
+      id: 13,
+      fullName: 'Taylor Standby',
+      email: 'taylor@driver.com',
+      phoneNumber: '+1-555-0104',
+      active: true,
+      totalAssignedShipments: 0,
+      activeDeliveriesCount: 0,
+      deliveredShipmentsCount: 0,
+    },
   ];
 
   const getRecentTimestamp = (minsAgo) => new Date(Date.now() - minsAgo * 60 * 1000).toISOString();
@@ -121,16 +133,18 @@ describe('AdminFleetMapPage Component', () => {
       },
     ];
 
+    mockUnsubscribe = vi.fn();
     mockStompClient = {
       activate: vi.fn(),
       deactivate: vi.fn(),
       subscribe: vi.fn((destination, callback) => {
         stompSubscriptions[destination] = callback;
-        return { unsubscribe: vi.fn() };
+        return { unsubscribe: mockUnsubscribe };
       }),
     };
 
     websocketModule.createStompClient.mockImplementation((options) => {
+      capturedStompOptions = options;
       // Simulate automatic connection
       setTimeout(() => {
         if (options?.onConnect) options.onConnect({});
@@ -472,6 +486,204 @@ describe('AdminFleetMapPage Component', () => {
     await waitFor(() => {
       expect(screen.getByTestId('unauthorized-page')).toBeInTheDocument();
       expect(screen.queryByTestId('admin-fleet-map-container')).not.toBeInTheDocument();
+    });
+  });
+
+  it('handles courier reassignment by resolving the new agent without reusing previous agent name', async () => {
+    render(
+      <MemoryRouter>
+        <AdminFleetMapPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-fleet-map-container')).toBeInTheDocument();
+    });
+
+    // Initial state: shipment 101 is assigned to Alex Courier (agentId 10)
+    expect(screen.getAllByText('Alex Courier').length).toBeGreaterThanOrEqual(1);
+
+    // Shipment 101 is reassigned to Taylor Standby (agentId 13)
+    const reassignedFrame = {
+      shipmentId: 101,
+      trackingNumber: 'TRK-20261031-FLEET01',
+      agentId: 13,
+      latitude: 30.27,
+      longitude: -97.74,
+      status: 'IN_TRANSIT',
+      timestamp: new Date().toISOString(),
+    };
+
+    act(() => {
+      const fleetCallback = stompSubscriptions['/topic/admin/fleet'];
+      fleetCallback({
+        body: JSON.stringify(reassignedFrame),
+      });
+    });
+
+    await waitFor(() => {
+      // Must reflect new courier name from directory
+      expect(screen.getAllByText('Taylor Standby').length).toBeGreaterThanOrEqual(1);
+      // Must NOT continue to associate Alex Courier with shipment 101
+      expect(screen.queryByText('Alex Courier')).not.toBeInTheDocument();
+    });
+  });
+
+  it('removes vehicle from active fleet for all terminal statuses: RETURNED and CANCELLED', async () => {
+    render(
+      <MemoryRouter>
+        <AdminFleetMapPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('TRK-20261031-FLEET01').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('TRK-20261031-FLEET02').length).toBeGreaterThanOrEqual(1);
+    });
+
+    // 1. Broadcast RETURNED for shipment 101
+    act(() => {
+      stompSubscriptions['/topic/admin/fleet']({
+        body: JSON.stringify({
+          shipmentId: 101,
+          status: 'RETURNED',
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('TRK-20261031-FLEET01')).not.toBeInTheDocument();
+      expect(screen.getByTestId('metric-total-vehicles')).toHaveTextContent('1');
+    });
+
+    // 2. Broadcast CANCELLED for shipment 102
+    act(() => {
+      stompSubscriptions['/topic/admin/fleet']({
+        body: JSON.stringify({
+          shipmentId: 102,
+          status: 'CANCELLED',
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('TRK-20261031-FLEET02')).not.toBeInTheDocument();
+      expect(screen.getByTestId('fleet-empty-state')).toBeInTheDocument();
+    });
+  });
+
+  it('re-subscribes, unsubscribes prior subscription, and refreshes REST snapshot on WebSocket reconnection', async () => {
+    render(
+      <MemoryRouter>
+        <AdminFleetMapPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-fleet-map-container')).toBeInTheDocument();
+    });
+
+    // Initial load called getFleet once
+    expect(adminService.getFleet).toHaveBeenCalledTimes(1);
+
+    // Simulate connection drop and reconnect: onConnect fires a second time
+    act(() => {
+      capturedStompOptions.onConnect({});
+    });
+
+    await waitFor(() => {
+      // REST snapshot refreshed to heal missed telemetry
+      expect(adminService.getFleet).toHaveBeenCalledTimes(2);
+      // Prior subscription unsubscribed to prevent duplicate messages
+      expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+      // Re-subscribed to fleet topic
+      expect(mockStompClient.subscribe).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('heals missed terminal updates when reconnecting via REST snapshot', async () => {
+    render(
+      <MemoryRouter>
+        <AdminFleetMapPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('TRK-20261031-FLEET01').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('TRK-20261031-FLEET02').length).toBeGreaterThanOrEqual(1);
+    });
+
+    // While disconnected, shipment 101 was completed/delivered in backend
+    // So getFleet now only returns shipment 102
+    adminService.getFleet.mockResolvedValueOnce({
+      success: true,
+      data: [sampleFleet[1]], // only shipment 102 remains active
+    });
+
+    // Simulate STOMP reconnect
+    act(() => {
+      capturedStompOptions.onConnect({});
+    });
+
+    await waitFor(() => {
+      // Shipment 101 should be healed (removed), 102 should remain
+      expect(screen.queryByText('TRK-20261031-FLEET01')).not.toBeInTheDocument();
+      expect(screen.getAllByText('TRK-20261031-FLEET02').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByTestId('metric-total-vehicles')).toHaveTextContent('1');
+    });
+  });
+
+  it('displays accurate wording distinguishing active accounts from lack of telemetry', async () => {
+    render(
+      <MemoryRouter>
+        <AdminFleetMapPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-fleet-map-container')).toBeInTheDocument();
+    });
+
+    // Check UI wording and metric separation
+    expect(screen.getByText('No Active Location')).toBeInTheDocument();
+    expect(screen.getByText('No active shipment location available')).toBeInTheDocument();
+    // 1 courier without active telemetry (Taylor Standby)
+    expect(screen.getByTestId('metric-no-location-agents')).toHaveTextContent('1');
+  });
+
+  it('handles incoming WebSocket broadcast with missing or invalid timestamp safely', async () => {
+    render(
+      <MemoryRouter>
+        <AdminFleetMapPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-fleet-map-container')).toBeInTheDocument();
+    });
+
+    // Broadcast with missing timestamp
+    const broadcastNoTs = {
+      shipmentId: 104,
+      trackingNumber: 'TRK-NO-TIMESTAMP',
+      agentId: 10,
+      latitude: 30.25,
+      longitude: -97.75,
+      status: 'IN_TRANSIT',
+      timestamp: null,
+    };
+
+    act(() => {
+      stompSubscriptions['/topic/admin/fleet']({
+        body: JSON.stringify(broadcastNoTs),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getAllByText('TRK-NO-TIMESTAMP').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByTestId('metric-total-vehicles')).toHaveTextContent('3');
     });
   });
 });

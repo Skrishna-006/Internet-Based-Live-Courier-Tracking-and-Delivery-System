@@ -36,7 +36,15 @@ export default function AdminFleetMapPage() {
   const [currentTime, setCurrentTime] = useState(Date.now());
 
   const stompClientRef = useRef(null);
+  const fleetSubscriptionRef = useRef(null);
   const isMountedRef = useRef(true);
+  const isInitialMountRef = useRef(true);
+  const agentsRef = useRef(agents);
+
+  // Keep agentsRef synchronized with latest agents
+  useEffect(() => {
+    agentsRef.current = agents;
+  }, [agents]);
 
   // Periodically refresh current time to update 5-minute stale badges
   useEffect(() => {
@@ -50,6 +58,7 @@ export default function AdminFleetMapPage() {
   const loadInitialData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    const fetchStartTime = Date.now();
 
     try {
       const [fleetRes, agentsRes] = await Promise.allSettled([
@@ -63,32 +72,44 @@ export default function AdminFleetMapPage() {
       if (agentsRes.status === 'fulfilled' && agentsRes.value?.data) {
         rawAgents = Array.isArray(agentsRes.value.data) ? agentsRes.value.data : [];
         setAgents(rawAgents);
+        agentsRef.current = rawAgents;
       }
 
       if (fleetRes.status === 'fulfilled' && fleetRes.value?.data) {
         const rawFleet = Array.isArray(fleetRes.value.data) ? fleetRes.value.data : [];
+        const agentMapById = new Map(rawAgents.map((a) => [a.id, a.fullName]));
+        const rawFleetShipmentIds = new Set();
 
         setFleetMap((prev) => {
-          const merged = { ...prev };
+          const merged = {};
+
           for (const item of rawFleet) {
             if (!isValidCoordinate(item.latitude, item.longitude)) continue;
+            rawFleetShipmentIds.add(item.shipmentId);
 
-            const existing = merged[item.shipmentId];
-            const restTimestamp = new Date(item.recordedAt).getTime();
+            const existing = prev[item.shipmentId];
+            const restTimestamp = item.recordedAt ? new Date(item.recordedAt).getTime() : NaN;
 
-            // Do not overwrite if a newer WebSocket frame already set newer coordinates
+            const matchedName = item.agentId ? agentMapById.get(item.agentId) : null;
+            const agentName = item.agentName && item.agentName !== 'Unassigned'
+              ? item.agentName
+              : (matchedName || (item.agentId ? `Agent #${item.agentId}` : 'Unassigned'));
+
+            // Do not overwrite coordinates if an existing WebSocket frame already set newer coordinates
             if (existing) {
               const existingTimestamp = new Date(existing.recordedAt || existing.timestamp).getTime();
               if (!isNaN(existingTimestamp) && !isNaN(restTimestamp) && restTimestamp < existingTimestamp) {
+                // Keep newer coordinates and timestamp, but update agent identity & status
+                merged[item.shipmentId] = {
+                  ...existing,
+                  agentId: item.agentId,
+                  agentName,
+                  status: item.status || existing.status,
+                  trackingNumber: item.trackingNumber || existing.trackingNumber,
+                };
                 continue;
               }
             }
-
-            // Fill agent name from directory if not present
-            const matchedAgent = rawAgents.find((a) => a.id === item.agentId);
-            const agentName = item.agentName && item.agentName !== 'Unassigned'
-              ? item.agentName
-              : matchedAgent?.fullName || `Agent #${item.agentId || 'Unknown'}`;
 
             merged[item.shipmentId] = {
               ...item,
@@ -97,6 +118,21 @@ export default function AdminFleetMapPage() {
               longitude: Number(item.longitude),
             };
           }
+
+          // Heal missed updates: if an item in prev was NOT returned in rawFleet,
+          // only keep it if a live update arrived DURING this fetch (timestamp >= fetchStartTime).
+          // Otherwise, it has reached a terminal status (DELIVERED, RETURNED, CANCELLED) or was unassigned,
+          // so drop it from the active fleet map.
+          for (const [shipmentIdStr, existingItem] of Object.entries(prev)) {
+            const sId = Number(shipmentIdStr);
+            if (rawFleetShipmentIds.has(sId)) continue;
+
+            const existingTimestamp = new Date(existingItem.recordedAt || existingItem.timestamp).getTime();
+            if (!isNaN(existingTimestamp) && existingTimestamp >= fetchStartTime) {
+              merged[sId] = existingItem;
+            }
+          }
+
           return merged;
         });
 
@@ -122,18 +158,26 @@ export default function AdminFleetMapPage() {
 
     setFleetMap((prev) => {
       const existing = prev[broadcast.shipmentId];
-      const updateTimestamp = new Date(broadcast.timestamp).getTime();
+
+      const rawUpdateTs = broadcast.timestamp || broadcast.recordedAt;
+      const updateTimestamp = rawUpdateTs ? new Date(rawUpdateTs).getTime() : NaN;
 
       // Enforce out-of-order protection: newer messages always win
       if (existing) {
-        const existingTimestamp = new Date(existing.recordedAt || existing.timestamp).getTime();
-        if (!isNaN(existingTimestamp) && !isNaN(updateTimestamp) && updateTimestamp < existingTimestamp) {
-          return prev; // Ignore stale out-of-order broadcast
+        const existingRawTs = existing.recordedAt || existing.timestamp;
+        const existingTimestamp = existingRawTs ? new Date(existingRawTs).getTime() : NaN;
+
+        if (!isNaN(existingTimestamp)) {
+          if (!isNaN(updateTimestamp) && updateTimestamp < existingTimestamp) {
+            return prev; // Ignore stale out-of-order broadcast
+          }
         }
       }
 
       // If status is terminal (DELIVERED, RETURNED, CANCELLED), remove from active fleet map
-      if (['DELIVERED', 'RETURNED', 'CANCELLED'].includes(broadcast.status)) {
+      const statusUpper = broadcast.status ? String(broadcast.status).toUpperCase() : '';
+      if (['DELIVERED', 'RETURNED', 'CANCELLED'].includes(statusUpper)) {
+        if (!existing) return prev;
         const updated = { ...prev };
         delete updated[broadcast.shipmentId];
         return updated;
@@ -144,26 +188,43 @@ export default function AdminFleetMapPage() {
         return prev;
       }
 
-      const agentInfo = agents.find((a) => a.id === broadcast.agentId);
-      const agentName = broadcast.agentName || existing?.agentName || agentInfo?.fullName || `Agent #${broadcast.agentId || 'Unknown'}`;
+      // Resolve agent identity cleanly without cross-contaminating on reassignment
+      const currentAgentId = broadcast.agentId !== undefined && broadcast.agentId !== null
+        ? Number(broadcast.agentId)
+        : (existing?.agentId || null);
+
+      const agentInfo = agentsRef.current.find((a) => a.id === currentAgentId);
+
+      let agentName;
+      if (broadcast.agentName && broadcast.agentName !== 'Unassigned') {
+        agentName = broadcast.agentName;
+      } else if (agentInfo?.fullName) {
+        agentName = agentInfo.fullName;
+      } else if (existing && existing.agentId === currentAgentId && existing.agentName && existing.agentName !== 'Unassigned') {
+        agentName = existing.agentName;
+      } else if (currentAgentId) {
+        agentName = `Agent #${currentAgentId}`;
+      } else {
+        agentName = 'Unassigned';
+      }
 
       return {
         ...prev,
         [broadcast.shipmentId]: {
           shipmentId: broadcast.shipmentId,
           trackingNumber: broadcast.trackingNumber,
-          agentId: broadcast.agentId,
+          agentId: currentAgentId,
           agentName,
           status: broadcast.status,
           latitude: Number(broadcast.latitude),
           longitude: Number(broadcast.longitude),
           speed: broadcast.speed,
           bearing: broadcast.bearing,
-          recordedAt: broadcast.timestamp,
+          recordedAt: rawUpdateTs || new Date().toISOString(),
         },
       };
     });
-  }, [agents]);
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -184,7 +245,24 @@ export default function AdminFleetMapPage() {
           if (!isMountedRef.current) return;
           setWsStatus('connected');
 
-          client.subscribe('/topic/admin/fleet', (frame) => {
+          // If reconnecting (not initial mount), refresh REST snapshot to heal missed updates
+          if (isInitialMountRef.current) {
+            isInitialMountRef.current = false;
+          } else {
+            loadInitialData();
+          }
+
+          // Unsubscribe prior subscription if exists to avoid duplicate handlers
+          if (fleetSubscriptionRef.current) {
+            try {
+              fleetSubscriptionRef.current.unsubscribe();
+            } catch {
+              // ignore
+            }
+            fleetSubscriptionRef.current = null;
+          }
+
+          fleetSubscriptionRef.current = client.subscribe('/topic/admin/fleet', (frame) => {
             if (!isMountedRef.current) return;
             try {
               const payload = JSON.parse(frame.body);
@@ -212,6 +290,14 @@ export default function AdminFleetMapPage() {
     }
 
     return () => {
+      if (fleetSubscriptionRef.current) {
+        try {
+          fleetSubscriptionRef.current.unsubscribe();
+        } catch {
+          // ignore
+        }
+        fleetSubscriptionRef.current = null;
+      }
       if (client) {
         try {
           client.deactivate();
@@ -220,7 +306,7 @@ export default function AdminFleetMapPage() {
         }
       }
     };
-  }, [handleFleetWsUpdate]);
+  }, [handleFleetWsUpdate, loadInitialData]);
 
   // Convert dictionary to array
   const allFleetVehicles = useMemo(() => {
@@ -246,7 +332,7 @@ export default function AdminFleetMapPage() {
 
     // Active agents that currently have no active GPS telemetry
     const agentsWithFleet = new Set(allFleetVehicles.map((v) => v.agentId).filter(Boolean));
-    const idleActiveAgentsCount = agents.filter((a) => a.active === true && !agentsWithFleet.has(a.id)).length;
+    const noLocationAgentsCount = agents.filter((a) => a.active === true && !agentsWithFleet.has(a.id)).length;
 
     return {
       totalVehicles,
@@ -254,7 +340,8 @@ export default function AdminFleetMapPage() {
       staleCount,
       totalAgentsCount,
       activeAgentsCount,
-      idleActiveAgentsCount,
+      noLocationAgentsCount,
+      idleActiveAgentsCount: noLocationAgentsCount, // backwards compatibility alias
     };
   }, [allFleetVehicles, agents, currentTime]);
 
@@ -417,18 +504,18 @@ export default function AdminFleetMapPage() {
             <span className="text-[10px] text-blue-600 block">System account active</span>
           </div>
 
-          {/* 6. Idle Active Drivers (No GPS transmission) */}
+          {/* 6. Active Drivers Without Active Shipment Telemetry */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1">
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
-              Idle Drivers
+              No Active Location
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-slate-700">
-                {metrics.idleActiveAgentsCount}
+              <span className="text-2xl font-bold text-slate-700" data-testid="metric-no-location-agents">
+                {metrics.noLocationAgentsCount}
               </span>
-              <span className="text-xs text-slate-400">idle</span>
+              <span className="text-xs text-slate-400">couriers</span>
             </div>
-            <span className="text-[10px] text-slate-500 block">No active shipment GPS</span>
+            <span className="text-[10px] text-slate-500 block">No active shipment location available</span>
           </div>
         </div>
 

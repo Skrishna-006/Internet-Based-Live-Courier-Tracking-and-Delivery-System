@@ -39,11 +39,15 @@ describe('AdminFleetMap Component & Helper Utilities', () => {
       expect(isValidCoordinate(0, -181)).toBe(false);
     });
 
-    it('rejects null, undefined, and non-numeric values', () => {
+    it('rejects null, undefined, boolean, empty strings, and non-numeric values', () => {
       expect(isValidCoordinate(null, -97.74)).toBe(false);
       expect(isValidCoordinate(30.26, null)).toBe(false);
       expect(isValidCoordinate(undefined, undefined)).toBe(false);
       expect(isValidCoordinate('not-a-number', 10)).toBe(false);
+      expect(isValidCoordinate(true, -97.74)).toBe(false);
+      expect(isValidCoordinate(30.26, false)).toBe(false);
+      expect(isValidCoordinate('', '')).toBe(false);
+      expect(isValidCoordinate('   ', -97.74)).toBe(false);
     });
   });
 
