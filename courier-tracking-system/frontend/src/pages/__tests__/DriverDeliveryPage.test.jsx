@@ -310,6 +310,33 @@ describe('DriverDeliveryPage Component', () => {
     });
   });
 
+  it('handles production mode where OTP is omitted from response and hides simulation box', async () => {
+    shipmentService.generateDeliveryOtp.mockResolvedValueOnce({
+      success: true,
+      data: {
+        shipmentId: 101,
+        trackingNumber: 'TRK-20261031-DELIV01',
+        otp: null,
+        expiresAt: '2026-10-31T10:10:00Z',
+        message: 'Delivery OTP generated successfully and dispatched to recipient',
+      },
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('request-otp-btn')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('request-otp-btn'));
+
+    await waitFor(() => {
+      expect(shipmentService.generateDeliveryOtp).toHaveBeenCalledWith(101);
+      expect(screen.queryByTestId('dev-otp-simulation-box')).not.toBeInTheDocument();
+      expect(screen.getByTestId('request-otp-btn')).toHaveTextContent(/Re-send OTP in/i);
+    });
+  });
+
   it('validates 6-digit numeric constraint on client before OTP submission', async () => {
     renderComponent();
 

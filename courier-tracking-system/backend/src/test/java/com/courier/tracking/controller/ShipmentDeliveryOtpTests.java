@@ -3,6 +3,7 @@ package com.courier.tracking.controller;
 import com.courier.tracking.dto.DeliveryConfirmationResponse;
 import com.courier.tracking.dto.DeliveryOtpResponse;
 import com.courier.tracking.dto.VerifyDeliveryOtpRequest;
+import com.courier.tracking.service.ShipmentService;
 import com.courier.tracking.entity.*;
 import com.courier.tracking.repository.DeliveryProofRepository;
 import com.courier.tracking.repository.RoleRepository;
@@ -67,6 +68,9 @@ class ShipmentDeliveryOtpTests {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ShipmentService shipmentService;
 
     private User adminUser;
     private User customerUser;
@@ -280,6 +284,44 @@ class ShipmentDeliveryOtpTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value(containsString("60 seconds")));
+    }
+
+    @Test
+    @DisplayName("Security: When exposeOtpInResponse is false, raw OTP is never disclosed in service response")
+    void testGenerateOtp_productionSecurity_otpOmittedWhenFlagFalse() {
+        shipmentService.setExposeOtpInResponse(false);
+        try {
+            DeliveryOtpResponse response = shipmentService.generateDeliveryOtp(
+                    outForDeliveryShipment.getId(),
+                    assignedAgent.getEmail()
+            );
+            assertNotNull(response);
+            assertNull(response.otp(), "OTP must be null in production/safe configuration");
+            assertNotNull(response.trackingNumber());
+            assertNotNull(response.expiresAt());
+
+            // Verify DB still holds hashed OTP
+            Shipment updated = shipmentRepository.findById(outForDeliveryShipment.getId()).orElseThrow();
+            assertNotNull(updated.getDeliveryOtpHash());
+        } finally {
+            shipmentService.setExposeOtpInResponse(true);
+        }
+    }
+
+    @Test
+    @DisplayName("Security: When exposeOtpInResponse is false, raw OTP is null in MockMvc API response")
+    void testGenerateOtp_mockMvc_otpNullWhenFlagFalse() throws Exception {
+        shipmentService.setExposeOtpInResponse(false);
+        try {
+            mockMvc.perform(post("/api/v1/shipments/" + outForDeliveryShipment.getId() + "/delivery-otp")
+                            .header("Authorization", "Bearer " + assignedAgentToken)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.otp").value(nullValue()));
+        } finally {
+            shipmentService.setExposeOtpInResponse(true);
+        }
     }
 
     // =========================================================================

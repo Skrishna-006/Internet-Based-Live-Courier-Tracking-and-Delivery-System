@@ -63,6 +63,9 @@ public class ShipmentService {
     private final PasswordEncoder passwordEncoder;
     private final LocationBroadcastService locationBroadcastService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.otp.expose-in-response:false}")
+    private boolean exposeOtpInResponse = false;
+
     public ShipmentService(ShipmentRepository shipmentRepository,
                            UserRepository userRepository,
                            PricingProperties pricingProperties) {
@@ -689,10 +692,18 @@ public class ShipmentService {
         return new DeliveryOtpResponse(
                 shipment.getId(),
                 shipment.getTrackingNumber(),
-                rawOtp,
+                exposeOtpInResponse ? rawOtp : null,
                 expiresAt,
                 "Delivery OTP generated successfully and dispatched to recipient"
         );
+    }
+
+    public boolean isExposeOtpInResponse() {
+        return exposeOtpInResponse;
+    }
+
+    public void setExposeOtpInResponse(boolean exposeOtpInResponse) {
+        this.exposeOtpInResponse = exposeOtpInResponse;
     }
 
     /**

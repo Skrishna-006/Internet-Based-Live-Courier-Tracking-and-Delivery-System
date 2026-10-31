@@ -26,3 +26,5 @@ app:
     per-kg-rate: 5.00
     currency: USD
     min-price: 10.00
+  otp:
+    expose-in-response: true
