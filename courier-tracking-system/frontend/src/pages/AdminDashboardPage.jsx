@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Package,
@@ -145,6 +145,10 @@ export default function AdminDashboardPage() {
   const [shipmentDetails, setShipmentDetails] = useState(null);
   const [shipmentEvents, setShipmentEvents] = useState([]);
 
+  // Request Sequence & Active Modal References (Race Condition & Cancellation Protection)
+  const shipmentRequestIdRef = useRef(0);
+  const activeModalShipmentIdRef = useRef(null);
+
   // Fetch Overview Metrics
   const fetchOverview = useCallback(async () => {
     setOverviewLoading(true);
@@ -164,8 +168,9 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  // Fetch Paginated Shipments
+  // Fetch Paginated Shipments with Request Sequence Protection
   const fetchShipments = useCallback(async () => {
+    const currentReqId = ++shipmentRequestIdRef.current;
     setShipmentsLoading(true);
     setShipmentsError(null);
 
@@ -190,6 +195,9 @@ export default function AdminDashboardPage() {
 
       const res = await adminService.getShipments(params);
 
+      // Discard stale out-of-order response if another request has been initiated
+      if (currentReqId !== shipmentRequestIdRef.current) return;
+
       if (res.success && res.data) {
         const pageData = res.data;
         setShipments(pageData.content || []);
@@ -201,9 +209,12 @@ export default function AdminDashboardPage() {
         setShipmentsError(res.message || 'Failed to retrieve shipments');
       }
     } catch (err) {
+      if (currentReqId !== shipmentRequestIdRef.current) return;
       setShipmentsError(err.message || 'Error communicating with shipment service');
     } finally {
-      setShipmentsLoading(false);
+      if (currentReqId === shipmentRequestIdRef.current) {
+        setShipmentsLoading(false);
+      }
     }
   }, [page, pageSize, statusFilter, appliedSearch, unassignedOnly]);
 
@@ -226,9 +237,10 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  // Fetch Shipment Details & Audit Events for Modal
+  // Fetch Shipment Details & Audit Events for Modal with Cancellation Protection
   const fetchShipmentDetails = useCallback(async (id) => {
     if (!id) return;
+    activeModalShipmentIdRef.current = id;
     setSelectedShipmentId(id);
     setDetailsLoading(true);
     setDetailsError(null);
@@ -240,6 +252,9 @@ export default function AdminDashboardPage() {
         adminService.getShipmentById(id),
         adminService.getShipmentEvents(id),
       ]);
+
+      // Discard response if modal was closed or switched to another consignment
+      if (activeModalShipmentIdRef.current !== id) return;
 
       if (detailsRes.status === 'fulfilled' && detailsRes.value?.data) {
         setShipmentDetails(detailsRes.value.data);
@@ -255,18 +270,32 @@ export default function AdminDashboardPage() {
         setShipmentEvents([]);
       }
     } catch (err) {
+      if (activeModalShipmentIdRef.current !== id) return;
       setDetailsError(err.message || 'Error communicating with shipment service');
     } finally {
-      setDetailsLoading(false);
+      if (activeModalShipmentIdRef.current === id) {
+        setDetailsLoading(false);
+      }
     }
   }, []);
 
-  // Initial Load
+  const handleCloseModal = () => {
+    activeModalShipmentIdRef.current = null;
+    setSelectedShipmentId(null);
+  };
+
+  // Dedicated effects to avoid redundant calls to overview and agents upon shipment paging/filtering
   useEffect(() => {
     fetchOverview();
-    fetchShipments();
+  }, [fetchOverview]);
+
+  useEffect(() => {
     fetchAgents();
-  }, [fetchOverview, fetchShipments, fetchAgents]);
+  }, [fetchAgents]);
+
+  useEffect(() => {
+    fetchShipments();
+  }, [fetchShipments]);
 
   // Handle Search Submission
   const handleSearchSubmit = (e) => {
@@ -561,7 +590,13 @@ export default function AdminDashboardPage() {
                     type="text"
                     placeholder="Search tracking number..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (e.target.value === '' && appliedSearch !== '') {
+                        setAppliedSearch('');
+                        setPage(0);
+                      }
+                    }}
                     className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                     data-testid="shipment-search-input"
                   />
@@ -1009,6 +1044,9 @@ export default function AdminDashboardPage() {
           data-testid="shipment-details-modal"
           role="dialog"
           aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseModal();
+          }}
         >
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden my-8">
             {/* Modal Header */}
@@ -1035,7 +1073,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <button
-                onClick={() => setSelectedShipmentId(null)}
+                onClick={handleCloseModal}
                 className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                 aria-label="Close dialog"
                 data-testid="close-modal-btn"
@@ -1112,7 +1150,7 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {/* Grid 2: Assignment & Logistics Specs */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-[11px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-[11px]">
                     <div>
                       <span className="text-slate-400 block mb-0.5">Assigned Agent</span>
                       <span className="font-semibold text-slate-800 block">
@@ -1150,6 +1188,31 @@ export default function AdminDashboardPage() {
                               year: 'numeric',
                             })
                           : '—'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">Delivery Timeline</span>
+                      <span className="font-semibold text-slate-800 block">
+                        {shipmentDetails.actualDeliveryAt ? (
+                          <span className="text-emerald-700">
+                            Delivered:{' '}
+                            {new Date(shipmentDetails.actualDeliveryAt).toLocaleDateString([], {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        ) : shipmentDetails.estimatedDeliveryAt ? (
+                          <span className="text-blue-700">
+                            Est:{' '}
+                            {new Date(shipmentDetails.estimatedDeliveryAt).toLocaleDateString([], {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        ) : (
+                          'In Progress'
+                        )}
                       </span>
                     </div>
                   </div>
@@ -1214,7 +1277,7 @@ export default function AdminDashboardPage() {
               )}
 
               <button
-                onClick={() => setSelectedShipmentId(null)}
+                onClick={handleCloseModal}
                 className="px-4 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold"
               >
                 Close

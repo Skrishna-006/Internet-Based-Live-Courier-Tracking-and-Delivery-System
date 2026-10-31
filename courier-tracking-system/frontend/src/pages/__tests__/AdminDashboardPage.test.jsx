@@ -517,4 +517,70 @@ describe('AdminDashboardPage Component', () => {
       expect(screen.queryByTestId('overview-metrics-grid')).not.toBeInTheDocument();
     });
   });
+
+  it('does not repeatedly re-fetch overview and agents when pagination or filters change', async () => {
+    render(
+      <MemoryRouter>
+        <AdminDashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('shipments-table')).toBeInTheDocument();
+    });
+
+    // On mount: overview, shipments, and agents called once
+    expect(adminService.getOverview).toHaveBeenCalledTimes(1);
+    expect(adminService.getAgents).toHaveBeenCalledTimes(1);
+    expect(adminService.getShipments).toHaveBeenCalledTimes(1);
+
+    // Change status filter
+    const statusSelect = screen.getByTestId('shipment-status-filter');
+    fireEvent.change(statusSelect, { target: { value: 'DELIVERED' } });
+
+    await waitFor(() => {
+      expect(adminService.getShipments).toHaveBeenCalledTimes(2);
+    });
+
+    // Overview and agents must NOT have been re-fetched
+    expect(adminService.getOverview).toHaveBeenCalledTimes(1);
+    expect(adminService.getAgents).toHaveBeenCalledTimes(1);
+  });
+
+  it('safely ignores in-flight shipment details when modal is closed before resolution', async () => {
+    let resolveShipment;
+    adminService.getShipmentById.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveShipment = resolve;
+        })
+    );
+
+    render(
+      <MemoryRouter>
+        <AdminDashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('view-shipment-101')).toBeInTheDocument();
+    });
+
+    // Open modal (request starts in flight)
+    fireEvent.click(screen.getByTestId('view-shipment-101'));
+    expect(screen.getByTestId('shipment-details-modal')).toBeInTheDocument();
+
+    // Immediately close modal before promise resolves
+    fireEvent.click(screen.getByTestId('close-modal-btn'));
+    expect(screen.queryByTestId('shipment-details-modal')).not.toBeInTheDocument();
+
+    // Now resolve the late response
+    resolveShipment({
+      success: true,
+      data: sampleShipments[0],
+    });
+
+    // Modal must remain closed and not resurrect
+    expect(screen.queryByTestId('shipment-details-modal')).not.toBeInTheDocument();
+  });
 });

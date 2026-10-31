@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { Package, MapPin, Shield, Navigation, LogIn, UserPlus, LogOut, User as UserIcon, PlusCircle } from 'lucide-react';
+import { Package, MapPin, Shield, Navigation, LogIn, UserPlus, LogOut, User as UserIcon, PlusCircle, RefreshCw } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
@@ -12,10 +12,12 @@ import CustomerDashboardPage from './pages/CustomerDashboardPage';
 import BookingPage from './pages/BookingPage';
 import DriverDashboardPage from './pages/DriverDashboardPage';
 import DriverDeliveryPage from './pages/DriverDeliveryPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
-import AdminFleetMapPage from './pages/AdminFleetMapPage';
 import PlaceholderDashboard from './pages/PlaceholderDashboard';
 import NotFoundPage from './pages/NotFoundPage';
+
+// Code-split heavy admin modules so public landing/tracking pages load without admin/leaflet overhead
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
+const AdminFleetMapPage = lazy(() => import('./pages/AdminFleetMapPage'));
 
 function NavigationBar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -220,7 +222,16 @@ export default function App() {
               path="/admin/dashboard"
               element={
                 <ProtectedRoute allowedRoles={['ROLE_ADMIN']}>
-                  <AdminDashboardPage />
+                  <Suspense
+                    fallback={
+                      <div className="h-96 flex flex-col items-center justify-center p-8 space-y-3" data-testid="admin-lazy-loading">
+                        <RefreshCw className="w-8 h-8 text-purple-600 animate-spin" />
+                        <p className="text-xs font-semibold text-slate-500">Loading Dispatch Hub...</p>
+                      </div>
+                    }
+                  >
+                    <AdminDashboardPage />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
@@ -229,7 +240,16 @@ export default function App() {
               path="/admin/fleet"
               element={
                 <ProtectedRoute allowedRoles={['ROLE_ADMIN']}>
-                  <AdminFleetMapPage />
+                  <Suspense
+                    fallback={
+                      <div className="h-96 flex flex-col items-center justify-center p-8 space-y-3" data-testid="fleet-lazy-loading">
+                        <RefreshCw className="w-8 h-8 text-purple-600 animate-spin" />
+                        <p className="text-xs font-semibold text-slate-500">Loading Live Fleet Map...</p>
+                      </div>
+                    }
+                  >
+                    <AdminFleetMapPage />
+                  </Suspense>
                 </ProtectedRoute>
               }
             />
