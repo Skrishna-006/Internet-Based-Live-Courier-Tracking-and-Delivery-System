@@ -61,6 +61,16 @@ export default function PlaceholderDashboard({ portalType, title, description, p
           </div>
 
           <div className="flex items-center gap-4 pt-2">
+            {portalType === 'admin' && (
+              <Link
+                to="/admin/fleet"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-colors"
+                data-testid="admin-open-fleet-map-btn"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                Open Live Fleet Map
+              </Link>
+            )}
             <Link
               to="/track"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"

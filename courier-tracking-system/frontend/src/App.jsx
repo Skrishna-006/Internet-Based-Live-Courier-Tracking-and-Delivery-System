@@ -12,6 +12,7 @@ import CustomerDashboardPage from './pages/CustomerDashboardPage';
 import BookingPage from './pages/BookingPage';
 import DriverDashboardPage from './pages/DriverDashboardPage';
 import DriverDeliveryPage from './pages/DriverDeliveryPage';
+import AdminFleetMapPage from './pages/AdminFleetMapPage';
 import PlaceholderDashboard from './pages/PlaceholderDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -93,6 +94,16 @@ function NavigationBar() {
                 >
                   <PlusCircle className="w-3.5 h-3.5 text-indigo-600" />
                   <span>Book Shipment</span>
+                </Link>
+              )}
+
+              {user.role === 'ROLE_ADMIN' && (
+                <Link
+                  to="/admin/fleet"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 transition-colors border border-purple-200"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Fleet Map</span>
                 </Link>
               )}
 
@@ -214,6 +225,15 @@ export default function App() {
                     description="System-wide logistics fleet monitoring, manual consignment reassignments, and operational logs."
                     plannedFeature="Phase 6 — Feature 5: Dispatch & Admin Control Dashboard"
                   />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/fleet"
+              element={
+                <ProtectedRoute allowedRoles={['ROLE_ADMIN']}>
+                  <AdminFleetMapPage />
                 </ProtectedRoute>
               }
             />
