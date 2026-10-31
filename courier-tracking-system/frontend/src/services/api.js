@@ -61,6 +61,17 @@ export const shipmentService = {
     api.get('/shipments', { params }),
   getShipmentById: (id) =>
     api.get(`/shipments/${id}`),
+  updateStatus: (id, statusData) =>
+    api.patch(`/shipments/${id}/status`, statusData),
+};
+
+export const agentService = {
+  getMyAssignments: (params = {}) =>
+    api.get('/agents/me/assignments', { params }),
+  getMySummary: () =>
+    api.get('/agents/me/assignments/summary'),
+  getAssignmentById: (id) =>
+    api.get(`/agents/me/assignments/${id}`),
 };
 
 export default api;

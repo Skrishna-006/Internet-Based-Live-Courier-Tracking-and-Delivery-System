@@ -48,6 +48,37 @@ vi.mock('../services/api', () => ({
     }),
     getShipmentById: vi.fn().mockResolvedValue({ data: null }),
   },
+  agentService: {
+    getMyAssignments: vi.fn().mockResolvedValue({
+      success: true,
+      data: {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        number: 0,
+        first: true,
+        last: true,
+      },
+    }),
+    getMySummary: vi.fn().mockResolvedValue({
+      success: true,
+      data: {
+        totalAssigned: 0,
+        awaitingPickup: 0,
+        inTransit: 0,
+        outForDelivery: 0,
+        completed: 0,
+      },
+    }),
+  },
+}));
+
+vi.mock('../services/websocket', () => ({
+  createStompClient: vi.fn().mockReturnValue({
+    activate: vi.fn(),
+    deactivate: vi.fn(),
+    subscribe: vi.fn().mockReturnValue({ unsubscribe: vi.fn() }),
+  }),
 }));
 
 describe('App Routing & Authentication Integration', () => {
@@ -283,6 +314,38 @@ describe('App Routing & Authentication Integration', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Sign In to SwiftTrack')).toBeInTheDocument();
+    });
+  });
+
+  it('allows authenticated delivery agent to access /driver/dashboard and displays driver portal', async () => {
+    const futureTimestamp = Math.floor(Date.now() / 1000) + 3600;
+    const token = createMockToken({
+      sub: 'driver@example.com',
+      userId: 55,
+      role: 'ROLE_DELIVERY_AGENT',
+      exp: futureTimestamp,
+    });
+    localStorage.setItem('token', token);
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: 55,
+        email: 'driver@example.com',
+        fullName: 'Dave Driver',
+        role: 'ROLE_DELIVERY_AGENT',
+      })
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/driver/dashboard']}>
+        <App />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('driver-portal-title')).toHaveTextContent('Delivery Agent Route Portal');
+      expect(screen.getByTestId('navbar-user-name')).toHaveTextContent('Dave Driver');
+      expect(screen.getByTestId('navbar-role-badge')).toHaveTextContent('Agent');
     });
   });
 

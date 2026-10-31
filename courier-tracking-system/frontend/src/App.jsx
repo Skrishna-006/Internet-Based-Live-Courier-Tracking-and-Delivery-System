@@ -10,6 +10,7 @@ import RegisterPage from './pages/RegisterPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import CustomerDashboardPage from './pages/CustomerDashboardPage';
 import BookingPage from './pages/BookingPage';
+import DriverDashboardPage from './pages/DriverDashboardPage';
 import PlaceholderDashboard from './pages/PlaceholderDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -188,12 +189,7 @@ export default function App() {
               path="/driver/dashboard"
               element={
                 <ProtectedRoute allowedRoles={['ROLE_DELIVERY_AGENT']}>
-                  <PlaceholderDashboard
-                    portalType="driver"
-                    title="Delivery Agent Route Portal"
-                    description="View assigned package pickups, activate delivery run mode, and verify proof-of-delivery OTPs."
-                    plannedFeature="Phase 6 — Feature 3 & 4: Driver Portal & Live Telemetry"
-                  />
+                  <DriverDashboardPage />
                 </ProtectedRoute>
               }
             />

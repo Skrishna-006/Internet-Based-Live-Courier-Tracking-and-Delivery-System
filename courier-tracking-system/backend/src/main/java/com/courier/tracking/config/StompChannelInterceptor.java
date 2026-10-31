@@ -1,6 +1,8 @@
 package com.courier.tracking.config;
 
 import com.courier.tracking.entity.Shipment;
+import com.courier.tracking.entity.User;
+import com.courier.tracking.repository.UserRepository;
 import com.courier.tracking.repository.ShipmentRepository;
 import com.courier.tracking.security.JwtTokenProvider;
 import com.courier.tracking.service.CustomUserDetailsService;
@@ -37,17 +39,21 @@ public class StompChannelInterceptor implements ChannelInterceptor {
     private static final Logger log = LoggerFactory.getLogger(StompChannelInterceptor.class);
     private static final Pattern TRACKING_TOPIC_PATTERN = Pattern.compile("^/topic/track/([^/]+)$");
     private static final String FLEET_TOPIC = "/topic/admin/fleet";
+    private static final Pattern AGENT_ORDERS_TOPIC_PATTERN = Pattern.compile("^/topic/agent/([^/]+)/orders$");
 
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService userDetailsService;
     private final ShipmentRepository shipmentRepository;
+    private final UserRepository userRepository;
 
     public StompChannelInterceptor(JwtTokenProvider jwtTokenProvider,
                                    CustomUserDetailsService userDetailsService,
-                                   ShipmentRepository shipmentRepository) {
+                                   ShipmentRepository shipmentRepository,
+                                   UserRepository userRepository) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.userDetailsService = userDetailsService;
         this.shipmentRepository = shipmentRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -136,7 +142,15 @@ public class StompChannelInterceptor implements ChannelInterceptor {
             return;
         }
 
-        // 3. Reject any other unauthorized topic subscription
+        // 3. Check Delivery Agent Orders Topic: /topic/agent/{agentId}/orders
+        Matcher agentMatcher = AGENT_ORDERS_TOPIC_PATTERN.matcher(destination);
+        if (agentMatcher.matches()) {
+            String agentIdStr = agentMatcher.group(1);
+            authorizeAgentOrdersSubscription(authentication, agentIdStr);
+            return;
+        }
+
+        // 4. Reject any other unauthorized topic subscription
         if (destination.startsWith("/topic/")) {
             log.warn("Access denied: user '{}' attempted subscription to unrecognized topic '{}'",
                     authentication.getName(), destination);
@@ -177,6 +191,46 @@ public class StompChannelInterceptor implements ChannelInterceptor {
         log.warn("Access denied: user '{}' with authorities {} attempted subscription to customer topic for '{}'",
                 authentication.getName(), authentication.getAuthorities(), trackingNumber);
         throw new AccessDeniedException("Access denied: Only authorized customers can subscribe to shipment tracking");
+    }
+
+
+    private void authorizeAgentOrdersSubscription(Authentication authentication, String agentIdStr) {
+        Long requestedAgentId;
+        try {
+            requestedAgentId = Long.parseLong(agentIdStr);
+        } catch (NumberFormatException e) {
+            log.warn("Access denied: invalid agent id in destination '{}' for subscriber '{}'",
+                    agentIdStr, authentication.getName());
+            throw new AccessDeniedException("Access denied: Invalid agent ID destination");
+        }
+
+        // Administrators are authorized to monitor any agent order topic
+        if (hasRole(authentication, "ROLE_ADMIN")) {
+            log.info("Admin '{}' authorized to subscribe to agent orders topic for agent id={}",
+                    authentication.getName(), requestedAgentId);
+            return;
+        }
+
+        // Delivery agents must match the requestedAgentId
+        if (hasRole(authentication, "ROLE_DELIVERY_AGENT")) {
+            User user = userRepository.findByEmail(authentication.getName().toLowerCase(java.util.Locale.ROOT).trim())
+                    .orElseThrow(() -> new AccessDeniedException("Access denied: Delivery agent account not found"));
+
+            if (user.getId().equals(requestedAgentId)) {
+                log.info("Delivery agent '{}' (id={}) authorized to subscribe to their orders topic",
+                        authentication.getName(), requestedAgentId);
+                return;
+            }
+
+            log.warn("Access denied: delivery agent '{}' (id={}) attempted subscription to agent id={}'s order topic",
+                    authentication.getName(), user.getId(), requestedAgentId);
+            throw new AccessDeniedException("Access denied: You are not authorized to subscribe to another agent's assignment notifications");
+        }
+
+        // Customers and other roles are rejected
+        log.warn("Access denied: user '{}' with authorities {} attempted subscription to agent orders topic for id={}",
+                authentication.getName(), authentication.getAuthorities(), requestedAgentId);
+        throw new AccessDeniedException("Access denied: Only assigned delivery agents may subscribe to order notifications");
     }
 
     private void handleSend(StompHeaderAccessor accessor) {

@@ -1,6 +1,7 @@
 package com.courier.tracking.service;
 
 import com.courier.tracking.config.PricingProperties;
+import com.courier.tracking.dto.AgentSummaryResponse;
 import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.DeliveryConfirmationResponse;
@@ -296,7 +297,11 @@ public class ShipmentService {
         log.info("Shipment '{}' successfully assigned to agent '{}' (id={}) by admin '{}'",
                 updated.getTrackingNumber(), agent.getEmail(), agent.getId(), admin.getEmail());
 
-        return mapToResponse(updated);
+        ShipmentResponse response = mapToResponse(updated);
+        if (locationBroadcastService != null) {
+            locationBroadcastService.broadcastAssignment(agent.getId(), response);
+        }
+        return response;
     }
 
     private User getValidatedAdmin(String authenticatedEmail) {
@@ -334,6 +339,94 @@ public class ShipmentService {
         }
 
         return customer;
+    }
+    /**
+     * Retrieves a paginated list of shipments assigned to the authenticated delivery agent,
+     * with optional status filtering.
+     * Enforces ROLE_DELIVERY_AGENT role verification and active account status.
+     */
+    @Transactional(readOnly = true)
+    public Page<ShipmentResponse> getAgentAssignments(String authenticatedEmail, ShipmentStatus status, Pageable pageable) {
+        User agent = getValidatedAgent(authenticatedEmail);
+
+        Pageable effectivePageable = pageable;
+        if (pageable == null) {
+            effectivePageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
+        } else if (pageable.getSort().isUnsorted()) {
+            effectivePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
+        }
+
+        Page<Shipment> shipments;
+        if (status != null) {
+            shipments = shipmentRepository.findByAssignedAgentIdAndStatus(agent.getId(), status, effectivePageable);
+        } else {
+            shipments = shipmentRepository.findByAssignedAgentId(agent.getId(), effectivePageable);
+        }
+        return shipments.map(this::mapToResponse);
+    }
+
+    /**
+     * Retrieves summary counts for the authenticated delivery agent across their entire queue.
+     */
+    @Transactional(readOnly = true)
+    public AgentSummaryResponse getAgentSummary(String authenticatedEmail) {
+        User agent = getValidatedAgent(authenticatedEmail);
+        Long agentId = agent.getId();
+
+        long total = shipmentRepository.countByAssignedAgentId(agentId);
+        long awaitingPickup = shipmentRepository.countByAssignedAgentIdAndStatus(agentId, ShipmentStatus.ASSIGNED);
+        long pickedUp = shipmentRepository.countByAssignedAgentIdAndStatus(agentId, ShipmentStatus.PICKED_UP);
+        long inTransit = shipmentRepository.countByAssignedAgentIdAndStatus(agentId, ShipmentStatus.IN_TRANSIT);
+        long outForDelivery = shipmentRepository.countByAssignedAgentIdAndStatus(agentId, ShipmentStatus.OUT_FOR_DELIVERY);
+        long completed = shipmentRepository.countByAssignedAgentIdAndStatus(agentId, ShipmentStatus.DELIVERED);
+
+        return new AgentSummaryResponse(
+                total,
+                awaitingPickup,
+                inTransit + pickedUp,
+                outForDelivery,
+                completed
+        );
+    }
+
+    /**
+     * Retrieves a single shipment assigned to the authenticated delivery agent.
+     */
+    @Transactional(readOnly = true)
+    public ShipmentResponse getAgentShipmentById(Long id, String authenticatedEmail) {
+        if (id == null) {
+            throw new IllegalArgumentException("Shipment ID cannot be null");
+        }
+        User agent = getValidatedAgent(authenticatedEmail);
+
+        Shipment shipment = shipmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment", "id", id));
+
+        if (shipment.getAssignedAgent() == null || !shipment.getAssignedAgent().getId().equals(agent.getId())) {
+            log.warn("Access denied: delivery agent '{}' (id={}) attempted to access shipment id={} not assigned to them",
+                    agent.getEmail(), agent.getId(), id);
+            throw new AccessDeniedException("Access denied: You are not assigned to this shipment");
+        }
+
+        return mapToResponse(shipment);
+    }
+
+    private User getValidatedAgent(String authenticatedEmail) {
+        String normalizedEmail = authenticatedEmail != null ? authenticatedEmail.toLowerCase(Locale.ROOT).trim() : "";
+        User agent = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "email", normalizedEmail));
+
+        if (!RoleName.ROLE_DELIVERY_AGENT.equals(agent.getRole().getName())) {
+            log.warn("Access denied: user '{}' does not have ROLE_DELIVERY_AGENT (has role={})", normalizedEmail, agent.getRole().getName());
+            throw new AccessDeniedException("Only delivery agents with ROLE_DELIVERY_AGENT are authorized to access this resource");
+        }
+
+        if (!Boolean.TRUE.equals(agent.getActive())) {
+            log.warn("Access denied: delivery agent account '{}' is inactive", normalizedEmail);
+            throw new AccessDeniedException("Account is deactivated");
+        }
+
+        return agent;
     }
 
     private String generateUniqueTrackingNumber() {

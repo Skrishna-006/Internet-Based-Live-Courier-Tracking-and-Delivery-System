@@ -359,6 +359,68 @@ class StompChannelInterceptorTests {
         assertTrue(ex.getMessage().contains("Authentication required to send messages"));
     }
 
+
+    @Test
+    @DisplayName("SUBSCRIBE to /topic/agent/{agentId}/orders by assigned delivery agent succeeds")
+    void subscribe_toAgentOrdersTopic_byAssignedAgent_allowed() {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        accessor.setDestination("/topic/agent/" + agentUser.getId() + "/orders");
+        accessor.setUser(createAuth(agentUser.getEmail(), "ROLE_DELIVERY_AGENT"));
+        Message<?> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+
+        Message<?> result = interceptor.preSend(message, null);
+        assertNotNull(result);
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE to /topic/agent/{agentId}/orders by another delivery agent throws AccessDeniedException")
+    void subscribe_toAgentOrdersTopic_byDifferentAgent_rejected() {
+        // Create second agent
+        Role agentRole = roleRepository.findByName(RoleName.ROLE_DELIVERY_AGENT).orElseThrow();
+        User secondAgent = userRepository.save(new User(
+                "stomp.otheragent@example.com",
+                passwordEncoder.encode("Password123!"),
+                "Other Agent",
+                "+1-555-0999",
+                agentRole
+        ));
+
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        // Attempting to subscribe to agentUser's topic
+        accessor.setDestination("/topic/agent/" + agentUser.getId() + "/orders");
+        accessor.setUser(createAuth(secondAgent.getEmail(), "ROLE_DELIVERY_AGENT"));
+        Message<?> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class,
+                () -> interceptor.preSend(message, null));
+        assertTrue(ex.getMessage().contains("not authorized to subscribe to another agent"));
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE to /topic/agent/{agentId}/orders by customer throws AccessDeniedException")
+    void subscribe_toAgentOrdersTopic_byCustomer_rejected() {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        accessor.setDestination("/topic/agent/" + agentUser.getId() + "/orders");
+        accessor.setUser(createAuth(customerUser1.getEmail(), "ROLE_CUSTOMER"));
+        Message<?> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class,
+                () -> interceptor.preSend(message, null));
+        assertTrue(ex.getMessage().contains("Only assigned delivery agents may subscribe"));
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBE to /topic/agent/{agentId}/orders by admin succeeds")
+    void subscribe_toAgentOrdersTopic_byAdmin_allowed() {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        accessor.setDestination("/topic/agent/" + agentUser.getId() + "/orders");
+        accessor.setUser(createAuth(adminUser.getEmail(), "ROLE_ADMIN"));
+        Message<?> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
+
+        Message<?> result = interceptor.preSend(message, null);
+        assertNotNull(result);
+    }
+
     private UsernamePasswordAuthenticationToken createAuth(String email, String role) {
         UserDetails userDetails = org.springframework.security.core.userdetails.User
                 .withUsername(email)

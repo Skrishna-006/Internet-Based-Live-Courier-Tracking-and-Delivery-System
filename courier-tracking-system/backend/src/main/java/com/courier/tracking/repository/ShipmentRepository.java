@@ -33,7 +33,15 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     List<Shipment> findByAssignedAgentIdOrderByCreatedAtDesc(Long assignedAgentId);
 
+    Page<Shipment> findByAssignedAgentId(Long assignedAgentId, Pageable pageable);
+
     List<Shipment> findByAssignedAgentIdAndStatus(Long assignedAgentId, ShipmentStatus status);
+
+    Page<Shipment> findByAssignedAgentIdAndStatus(Long assignedAgentId, ShipmentStatus status, Pageable pageable);
+
+    long countByAssignedAgentId(Long assignedAgentId);
+
+    long countByAssignedAgentIdAndStatus(Long assignedAgentId, ShipmentStatus status);
 
     List<Shipment> findByStatus(ShipmentStatus status);
 

@@ -3,6 +3,7 @@ package com.courier.tracking.service;
 import com.courier.tracking.dto.FleetTrackingBroadcast;
 import com.courier.tracking.dto.LiveTrackingBroadcast;
 import com.courier.tracking.dto.LocationUpdateRequest;
+import com.courier.tracking.dto.ShipmentResponse;
 import com.courier.tracking.entity.Shipment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +80,27 @@ public class LocationBroadcastService {
         } catch (Exception ex) {
             log.error("Failed to broadcast WebSocket location update for shipment '{}': {}",
                     shipment.getTrackingNumber(), ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Broadcasts an assignment notification to the agent's private dispatch channel.
+     * Channel: /topic/agent/{agentId}/orders
+     */
+    public void broadcastAssignment(Long agentId, ShipmentResponse shipmentResponse) {
+        if (agentId == null || shipmentResponse == null) {
+            log.warn("Cannot broadcast assignment: agentId or shipmentResponse is null");
+            return;
+        }
+
+        try {
+            String agentTopic = "/topic/agent/" + agentId + "/orders";
+            messagingTemplate.convertAndSend(agentTopic, shipmentResponse);
+            log.info("Broadcasted assignment notification for shipment '{}' to agent topic '{}'",
+                    shipmentResponse.trackingNumber(), agentTopic);
+        } catch (Exception ex) {
+            log.error("Failed to broadcast assignment notification for agentId {}: {}",
+                    agentId, ex.getMessage(), ex);
         }
     }
 }
