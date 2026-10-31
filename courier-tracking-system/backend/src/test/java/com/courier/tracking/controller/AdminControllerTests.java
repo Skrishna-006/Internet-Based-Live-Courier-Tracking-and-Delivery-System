@@ -491,4 +491,183 @@ class AdminControllerTests {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.success").value(false));
     }
+
+    // --- TASK 3 VERIFICATION & HARDENING TESTS ---
+
+    @Test
+    @DisplayName("Admin can filter by unassigned only combined with tracking number search")
+    void adminCanFilterByUnassignedOnlyWithSearch() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("unassignedOnly", "true")
+                        .param("search", "EXPRESS")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].trackingNumber").value("TRK-EXPRESS-7777"))
+                .andExpect(jsonPath("$.data.content[0].assignedAgentId").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("Admin can filter by unassigned only combined with status and tracking number search")
+    void adminCanFilterByUnassignedOnlyWithStatusAndSearch() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("unassignedOnly", "true")
+                        .param("status", "CREATED")
+                        .param("search", "EXPRESS")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].trackingNumber").value("TRK-EXPRESS-7777"))
+                .andExpect(jsonPath("$.data.content[0].status").value("CREATED"))
+                .andExpect(jsonPath("$.data.content[0].assignedAgentId").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("Invalid status parameter returns controlled 400 Bad Request response")
+    void invalidStatusParameterReturnsControlledBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("status", "NON_EXISTENT_STATUS")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Invalid parameter value for 'status'"));
+    }
+
+    @Test
+    @DisplayName("Invalid sort property returns controlled 400 Bad Request response")
+    void invalidSortPropertyReturnsControlledBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("sort", "unrecognizedProperty,asc")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(containsString("Invalid sort property")));
+    }
+
+    @Test
+    @DisplayName("Invalid sort direction returns controlled 400 Bad Request response")
+    void invalidSortDirectionReturnsControlledBadRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("sort", "createdAt,invalidDirection")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("Shipment tracking events are returned in strict chronological order")
+    void shipmentTrackingEventsAreInStrictChronologicalOrder() throws Exception {
+        TrackingEvent event3 = new TrackingEvent(
+                inTransitShipment,
+                ShipmentStatus.OUT_FOR_DELIVERY,
+                new BigDecimal("30.2700000"),
+                new BigDecimal("-97.7400000"),
+                "Austin Local Delivery Van",
+                "Out for final delivery"
+        );
+        trackingEventRepository.save(event3);
+
+        mockMvc.perform(get("/api/v1/admin/shipments/{id}/events", inTransitShipment.getId())
+                        .header("Authorization", "Bearer " + adminToken)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data", hasSize(3)))
+                .andExpect(jsonPath("$.data[0].status").value("CREATED"))
+                .andExpect(jsonPath("$.data[1].status").value("IN_TRANSIT"))
+                .andExpect(jsonPath("$.data[2].status").value("OUT_FOR_DELIVERY"));
+    }
+
+    @Test
+    @DisplayName("Large pagination page size is safely clamped to maximum boundary")
+    void largePaginationBoundariesAreClamped() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("page", "0")
+                        .param("size", "5000")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.size").value(100));
+    }
+
+    @Test
+    @DisplayName("Unauthenticated request to list shipments returns 401 Unauthorized")
+    void unauthenticatedRequestShipmentsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("Unauthenticated request to agents directory returns 401 Unauthorized")
+    void unauthenticatedRequestAgentsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/agents")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("Unauthenticated request to fleet telemetry returns 401 Unauthorized")
+    void unauthenticatedRequestFleetUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/fleet")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("Customer is forbidden from retrieving agent directory")
+    void customerCannotRetrieveAgentSummariesForbidden() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/agents")
+                        .header("Authorization", "Bearer " + customerToken)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("Delivery agent is forbidden from retrieving shipment detail via admin endpoint")
+    void agentCannotRetrieveShipmentDetailForbidden() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments/{id}", outForDeliveryShipment.getId())
+                        .header("Authorization", "Bearer " + agentToken)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("Customer is forbidden from retrieving shipment tracking events via admin endpoint")
+    void customerCannotRetrieveShipmentEventsForbidden() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/shipments/{id}/events", inTransitShipment.getId())
+                        .header("Authorization", "Bearer " + customerToken)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    @DisplayName("Fleet telemetry strictly excludes customer PII and authentication data")
+    void fleetTelemetryExcludesCustomerPii() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/fleet")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[*].senderName").doesNotExist())
+                .andExpect(jsonPath("$.data[*].recipientName").doesNotExist())
+                .andExpect(jsonPath("$.data[*].senderPhone").doesNotExist())
+                .andExpect(jsonPath("$.data[*].recipientPhone").doesNotExist())
+                .andExpect(jsonPath("$.data[*].password").doesNotExist())
+                .andExpect(jsonPath("$.data[*].token").doesNotExist());
+    }
 }
