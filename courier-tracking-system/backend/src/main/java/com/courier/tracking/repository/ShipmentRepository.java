@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +45,24 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
     long countByAssignedAgentIdAndStatus(Long assignedAgentId, ShipmentStatus status);
 
     List<Shipment> findByStatus(ShipmentStatus status);
+
+    long countByStatus(ShipmentStatus status);
+
+    long countByAssignedAgentIsNull();
+
+    long countByAssignedAgentIdAndStatusIn(Long assignedAgentId, Collection<ShipmentStatus> statuses);
+
+    Page<Shipment> findByStatus(ShipmentStatus status, Pageable pageable);
+
+    Page<Shipment> findByAssignedAgentIsNull(Pageable pageable);
+
+    Page<Shipment> findByAssignedAgentIsNullAndStatus(ShipmentStatus status, Pageable pageable);
+
+    Page<Shipment> findByTrackingNumberContainingIgnoreCase(String trackingNumber, Pageable pageable);
+
+    Page<Shipment> findByStatusAndTrackingNumberContainingIgnoreCase(ShipmentStatus status, String trackingNumber, Pageable pageable);
+
+    List<Shipment> findByStatusInAndCurrentLatitudeIsNotNullAndCurrentLongitudeIsNotNull(Collection<ShipmentStatus> statuses);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Shipment s WHERE s.id = :id")
