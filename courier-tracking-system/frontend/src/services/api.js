@@ -80,4 +80,19 @@ export const agentService = {
     api.get(`/agents/me/assignments/${id}`),
 };
 
+export const adminService = {
+  getOverview: () =>
+    api.get('/admin/overview'),
+  getShipments: (params = {}) =>
+    api.get('/admin/shipments', { params }),
+  getShipmentById: (id) =>
+    api.get(`/admin/shipments/${id}`),
+  getShipmentEvents: (id) =>
+    api.get(`/admin/shipments/${id}/events`),
+  getAgents: (params = {}) =>
+    api.get('/admin/agents', { params }),
+  getFleet: () =>
+    api.get('/admin/fleet'),
+};
+
 export default api;
