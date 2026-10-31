@@ -62,7 +62,15 @@ public interface ShipmentRepository extends JpaRepository<Shipment, Long> {
 
     Page<Shipment> findByStatusAndTrackingNumberContainingIgnoreCase(ShipmentStatus status, String trackingNumber, Pageable pageable);
 
+    Page<Shipment> findByAssignedAgentIsNullAndTrackingNumberContainingIgnoreCase(String trackingNumber, Pageable pageable);
+
+    Page<Shipment> findByAssignedAgentIsNullAndStatusAndTrackingNumberContainingIgnoreCase(ShipmentStatus status, String trackingNumber, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"assignedAgent"})
     List<Shipment> findByStatusInAndCurrentLatitudeIsNotNullAndCurrentLongitudeIsNotNull(Collection<ShipmentStatus> statuses);
+
+    @Query("SELECT s.assignedAgent.id, s.status, COUNT(s) FROM Shipment s WHERE s.assignedAgent IS NOT NULL GROUP BY s.assignedAgent.id, s.status")
+    List<Object[]> countShipmentsGroupByAgentAndStatus();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Shipment s WHERE s.id = :id")
