@@ -12,6 +12,7 @@ import CustomerDashboardPage from './pages/CustomerDashboardPage';
 import BookingPage from './pages/BookingPage';
 import DriverDashboardPage from './pages/DriverDashboardPage';
 import DriverDeliveryPage from './pages/DriverDeliveryPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminFleetMapPage from './pages/AdminFleetMapPage';
 import PlaceholderDashboard from './pages/PlaceholderDashboard';
 import NotFoundPage from './pages/NotFoundPage';
@@ -219,12 +220,7 @@ export default function App() {
               path="/admin/dashboard"
               element={
                 <ProtectedRoute allowedRoles={['ROLE_ADMIN']}>
-                  <PlaceholderDashboard
-                    portalType="admin"
-                    title="Dispatch & Admin Operations"
-                    description="System-wide logistics fleet monitoring, manual consignment reassignments, and operational logs."
-                    plannedFeature="Phase 6 — Feature 5: Dispatch & Admin Control Dashboard"
-                  />
+                  <AdminDashboardPage />
                 </ProtectedRoute>
               }
             />
