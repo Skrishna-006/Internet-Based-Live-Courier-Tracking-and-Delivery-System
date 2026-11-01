@@ -19,6 +19,7 @@ import com.courier.tracking.entity.Shipment;
 import com.courier.tracking.entity.ShipmentStatus;
 import com.courier.tracking.entity.TrackingEvent;
 import com.courier.tracking.entity.User;
+import com.courier.tracking.exception.InvalidDeliveryOtpException;
 import com.courier.tracking.exception.ResourceNotFoundException;
 import com.courier.tracking.repository.DeliveryProofRepository;
 import com.courier.tracking.repository.ShipmentRepository;
@@ -717,7 +718,7 @@ public class ShipmentService {
      * @param authenticatedEmail Authenticated user principal email
      * @return DeliveryConfirmationResponse confirming handover and proof recording
      */
-    @Transactional(noRollbackFor = IllegalArgumentException.class)
+    @Transactional(noRollbackFor = InvalidDeliveryOtpException.class)
     public DeliveryConfirmationResponse confirmDeliveryWithOtp(Long shipmentId, VerifyDeliveryOtpRequest request, String authenticatedEmail) {
         if (shipmentId == null || shipmentId <= 0) {
             throw new IllegalArgumentException("Shipment ID must be a positive number");
@@ -780,7 +781,7 @@ public class ShipmentService {
                 log.warn("Delivery OTP invalidated due to exceeding max attempts on shipment '{}'", shipment.getTrackingNumber());
             }
             shipmentRepository.save(shipment);
-            throw new IllegalArgumentException("Invalid delivery OTP. Please check and try again.");
+            throw new InvalidDeliveryOtpException("Invalid delivery OTP. Please check and try again.");
         }
 
         // Guard against duplicate delivery proof (concurrency / replay protection)

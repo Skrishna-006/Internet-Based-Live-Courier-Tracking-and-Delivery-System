@@ -92,6 +92,13 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Validation failed", errors));
     }
 
+    @ExceptionHandler(InvalidDeliveryOtpException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidDeliveryOtp(InvalidDeliveryOtpException ex) {
+        log.warn("Invalid delivery OTP: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Bad request argument: {}", ex.getMessage());
