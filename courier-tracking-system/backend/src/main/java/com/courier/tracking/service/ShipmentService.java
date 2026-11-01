@@ -717,7 +717,7 @@ public class ShipmentService {
      * @param authenticatedEmail Authenticated user principal email
      * @return DeliveryConfirmationResponse confirming handover and proof recording
      */
-    @Transactional
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public DeliveryConfirmationResponse confirmDeliveryWithOtp(Long shipmentId, VerifyDeliveryOtpRequest request, String authenticatedEmail) {
         if (shipmentId == null || shipmentId <= 0) {
             throw new IllegalArgumentException("Shipment ID must be a positive number");

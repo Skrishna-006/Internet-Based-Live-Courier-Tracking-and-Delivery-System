@@ -256,13 +256,13 @@ export default function PublicTrackingPage() {
                         <span className="font-bold text-sm text-slate-800">
                           {milestone.status?.replace(/_/g, ' ')}
                         </span>
-                        {milestone.location && (
+                        {(milestone.location || milestone.locationName) && (
                           <span className="text-xs px-2 py-0.5 bg-slate-100 rounded-md text-slate-600 font-medium">
-                            {milestone.location}
+                            {milestone.location || milestone.locationName}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-600">{milestone.description}</p>
+                      <p className="text-xs text-slate-600">{milestone.description || milestone.remarks}</p>
                       <span className="text-[11px] text-slate-400 block">
                         {formatDateTime(milestone.timestamp)}
                       </span>
