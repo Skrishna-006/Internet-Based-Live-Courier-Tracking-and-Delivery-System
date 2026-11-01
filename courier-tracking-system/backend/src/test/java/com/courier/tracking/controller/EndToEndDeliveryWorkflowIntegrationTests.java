@@ -476,7 +476,16 @@ public class EndToEndDeliveryWorkflowIntegrationTests {
         // Other agent is disconnected or receives transport error due to unauthorized destination
         String err = subscribeErrorFuture.get(5, TimeUnit.SECONDS);
         assertNotNull(err);
-        otherSession.disconnect();
+        // The server-side StompChannelInterceptor closes the WebSocket session when it
+        // rejects the unauthorized subscription. The client-side isConnected() flag may
+        // still read true because it has not been synchronised with the server-side close.
+        // Wrapping disconnect() in try-catch prevents a spurious MessageDeliveryException
+        // from masking the real assertion above without weakening any security check.
+        try {
+            otherSession.disconnect();
+        } catch (Exception ignored) {
+            // Session was already closed by the server-side security interceptor.
+        }
     }
 
     // =========================================================================
