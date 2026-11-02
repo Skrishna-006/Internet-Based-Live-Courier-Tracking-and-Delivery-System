@@ -178,7 +178,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('renders operational overview metrics correctly from API response', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -204,7 +204,7 @@ describe('AdminDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -230,7 +230,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('renders shipments table with tracking numbers, status badges, and courier assignments', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -251,7 +251,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('filters shipments by status when status dropdown changes', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -275,7 +275,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('submits search query and triggers shipment filter', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -300,7 +300,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('filters by unassignedOnly when checkbox is checked', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -337,7 +337,7 @@ describe('AdminDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -375,7 +375,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('resets all filters when Reset button is clicked', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -401,7 +401,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('opens shipment details modal and renders consignment information and audit events', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -438,7 +438,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('switches to agent directory tab and renders courier workload summaries', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -475,7 +475,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('provides navigation button to existing live fleet map', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -497,7 +497,7 @@ describe('AdminDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/admin/dashboard']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/admin/dashboard']}>
         <Routes>
           <Route
             path="/admin/dashboard"
@@ -520,7 +520,7 @@ describe('AdminDashboardPage Component', () => {
 
   it('does not repeatedly re-fetch overview and agents when pagination or filters change', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -557,7 +557,7 @@ describe('AdminDashboardPage Component', () => {
     );
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );

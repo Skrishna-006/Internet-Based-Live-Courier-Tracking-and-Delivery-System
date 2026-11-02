@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import DriverDashboardPage from '../DriverDashboardPage';
 import * as authContextModule from '../../context/AuthContext';
@@ -109,7 +109,7 @@ describe('DriverDashboardPage Component', () => {
 
   it('renders driver portal header, agent details, and connection status', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -124,7 +124,7 @@ describe('DriverDashboardPage Component', () => {
 
   it('renders queue summary metrics from getMySummary', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -140,7 +140,7 @@ describe('DriverDashboardPage Component', () => {
 
   it('renders assigned shipment card with details and live tracking link', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -160,7 +160,7 @@ describe('DriverDashboardPage Component', () => {
 
   it('filters assignments when status filter button is clicked', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -194,7 +194,7 @@ describe('DriverDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -215,7 +215,7 @@ describe('DriverDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -268,7 +268,7 @@ describe('DriverDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -298,7 +298,7 @@ describe('DriverDashboardPage Component', () => {
     );
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -323,7 +323,7 @@ describe('DriverDashboardPage Component', () => {
 
   it('displays real-time STOMP notification when new order assigned', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );
@@ -341,8 +341,11 @@ describe('DriverDashboardPage Component', () => {
       recipientName: 'David Miller',
     };
 
-    mockStompSubscriptionCallback({
-      body: JSON.stringify(incomingOrder),
+    // Wrap in act() because calling the STOMP callback directly triggers a React state update
+    act(() => {
+      mockStompSubscriptionCallback({
+        body: JSON.stringify(incomingOrder),
+      });
     });
 
     await waitFor(() => {
@@ -361,7 +364,7 @@ describe('DriverDashboardPage Component', () => {
     agentService.getMyAssignments.mockRejectedValueOnce(new Error('Network error loading queue'));
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DriverDashboardPage />
       </MemoryRouter>
     );

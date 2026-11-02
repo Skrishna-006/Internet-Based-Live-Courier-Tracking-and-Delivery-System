@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import CustomerDashboardPage from '../CustomerDashboardPage';
 import * as authContextModule from '../../context/AuthContext';
@@ -57,7 +57,7 @@ describe('CustomerDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <CustomerDashboardPage />
       </MemoryRouter>
     );
@@ -65,6 +65,9 @@ describe('CustomerDashboardPage Component', () => {
     expect(screen.getByText('My Shipments')).toBeInTheDocument();
     expect(screen.getByText(/Jane Customer/i)).toBeInTheDocument();
     expect(screen.getByTestId('btn-book-shipment')).toHaveAttribute('href', '/customer/book');
+
+    // Drain the async useEffect data fetch so it doesn't leak state updates after test end
+    await act(async () => {});
   });
 
   it('renders shipments table when shipments are returned', async () => {
@@ -81,7 +84,7 @@ describe('CustomerDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <CustomerDashboardPage />
       </MemoryRouter>
     );
@@ -112,7 +115,7 @@ describe('CustomerDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <CustomerDashboardPage />
       </MemoryRouter>
     );
@@ -151,7 +154,7 @@ describe('CustomerDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <CustomerDashboardPage />
       </MemoryRouter>
     );
@@ -206,7 +209,7 @@ describe('CustomerDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <CustomerDashboardPage />
       </MemoryRouter>
     );
@@ -225,7 +228,7 @@ describe('CustomerDashboardPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <CustomerDashboardPage />
       </MemoryRouter>
     );

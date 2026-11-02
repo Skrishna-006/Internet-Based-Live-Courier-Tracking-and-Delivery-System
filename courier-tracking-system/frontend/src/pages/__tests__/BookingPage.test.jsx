@@ -35,7 +35,7 @@ describe('BookingPage Component', () => {
 
   it('renders booking form with pre-filled sender information from authenticated user', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BookingPage />
       </MemoryRouter>
     );
@@ -63,7 +63,7 @@ describe('BookingPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BookingPage />
       </MemoryRouter>
     );
@@ -83,7 +83,7 @@ describe('BookingPage Component', () => {
 
   it('shows validation warning when weight is below minimum or exceeds maximum', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BookingPage />
       </MemoryRouter>
     );
@@ -114,7 +114,7 @@ describe('BookingPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BookingPage />
       </MemoryRouter>
     );
@@ -167,7 +167,7 @@ describe('BookingPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BookingPage />
       </MemoryRouter>
     );
@@ -230,7 +230,7 @@ describe('BookingPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BookingPage />
       </MemoryRouter>
     );

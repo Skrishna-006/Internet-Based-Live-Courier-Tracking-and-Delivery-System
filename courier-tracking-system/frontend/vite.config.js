@@ -19,6 +19,22 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split React + ReactDOM into their own vendor chunk
+          'vendor-react': ['react', 'react-dom'],
+          // Split React Router into its own vendor chunk
+          'vendor-router': ['react-router-dom'],
+          // Split Leaflet map libraries (heavy, map-only pages load them)
+          'vendor-leaflet': ['leaflet', 'react-leaflet'],
+          // Split STOMP WebSocket client
+          'vendor-stomp': ['@stomp/stompjs'],
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

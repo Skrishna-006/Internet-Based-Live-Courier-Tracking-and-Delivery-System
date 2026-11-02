@@ -123,7 +123,7 @@ describe('Frontend End-to-End Delivery Workflow Integration', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <BookingPage />
       </MemoryRouter>
     );
@@ -221,7 +221,7 @@ describe('Frontend End-to-End Delivery Workflow Integration', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminDashboardPage />
       </MemoryRouter>
     );
@@ -302,7 +302,7 @@ describe('Frontend End-to-End Delivery Workflow Integration', () => {
     };
 
     render(
-      <MemoryRouter initialEntries={['/driver/delivery/501']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/driver/delivery/501']}>
         <Routes>
           <Route path="/driver/delivery/:id" element={<DriverDeliveryPage />} />
         </Routes>
@@ -396,7 +396,7 @@ describe('Frontend End-to-End Delivery Workflow Integration', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/driver/delivery/501']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/driver/delivery/501']}>
         <Routes>
           <Route path="/driver/delivery/:id" element={<DriverDeliveryPage />} />
         </Routes>
@@ -474,7 +474,7 @@ describe('Frontend End-to-End Delivery Workflow Integration', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/track/TRK-20261101-E2E01']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/track/TRK-20261101-E2E01']}>
         <Routes>
           <Route path="/track/:trackingNumber" element={<PublicTrackingPage />} />
         </Routes>

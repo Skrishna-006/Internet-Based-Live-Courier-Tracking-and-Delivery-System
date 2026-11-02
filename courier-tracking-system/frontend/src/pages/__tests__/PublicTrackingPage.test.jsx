@@ -34,7 +34,7 @@ describe('PublicTrackingPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/track']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/track']}>
         <Routes>
           <Route path="/track" element={<PublicTrackingPage />} />
         </Routes>
@@ -59,7 +59,7 @@ describe('PublicTrackingPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/track/TRK-TEST']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/track/TRK-TEST']}>
         <Routes>
           <Route path="/track/:trackingNumber" element={<PublicTrackingPage />} />
         </Routes>
@@ -81,7 +81,7 @@ describe('PublicTrackingPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/track/TRK-INVALID']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/track/TRK-INVALID']}>
         <Routes>
           <Route path="/track/:trackingNumber" element={<PublicTrackingPage />} />
         </Routes>
@@ -133,7 +133,7 @@ describe('PublicTrackingPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/track/TRK-20261026-LIVE']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/track/TRK-20261026-LIVE']}>
         <Routes>
           <Route path="/track/:trackingNumber" element={<PublicTrackingPage />} />
         </Routes>

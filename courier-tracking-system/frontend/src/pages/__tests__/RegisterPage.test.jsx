@@ -31,7 +31,7 @@ describe('RegisterPage Component', () => {
 
   it('renders registration form fields', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RegisterPage />
       </MemoryRouter>
     );
@@ -46,7 +46,7 @@ describe('RegisterPage Component', () => {
 
   it('validates password length >= 8 characters', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RegisterPage />
       </MemoryRouter>
     );
@@ -65,7 +65,7 @@ describe('RegisterPage Component', () => {
 
   it('validates password confirmation match', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RegisterPage />
       </MemoryRouter>
     );
@@ -88,7 +88,7 @@ describe('RegisterPage Component', () => {
     );
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RegisterPage />
       </MemoryRouter>
     );
@@ -116,7 +116,7 @@ describe('RegisterPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RegisterPage />
       </MemoryRouter>
     );

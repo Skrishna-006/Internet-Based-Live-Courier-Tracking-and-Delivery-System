@@ -82,7 +82,14 @@ describe('useLiveTracking Hook', () => {
   });
 
   it('subscribes to STOMP customer topic on WebSocket connect and updates location on broadcast', async () => {
-    const { result } = renderHook(() => useLiveTracking('TRK-20261026-TEST'));
+    let result;
+    // Drain the initial async effects (loadShipmentData + fetchLiveLocationFallback) so
+    // their promise resolutions are properly wrapped in act() before we fire STOMP callbacks.
+    await act(async () => {
+      ({ result } = renderHook(() => useLiveTracking('TRK-20261026-TEST')));
+      // Flush microtask queue so mock resolved promises settle inside act()
+      await Promise.resolve();
+    });
 
     // Trigger STOMP onConnect callback
     act(() => {
@@ -118,20 +125,23 @@ describe('useLiveTracking Hook', () => {
   });
 
   it('falls back to polling when WebSocket disconnects or fails', async () => {
-    const { result } = renderHook(() =>
-      useLiveTracking('TRK-20261026-TEST', { pollingInterval: 5000 })
-    );
-
-    // Let mount promises resolve
+    let result;
+    // Wrap renderHook + initial async effects together so promise resolutions
+    // from loadShipmentData and fetchLiveLocationFallback are covered by act().
     await act(async () => {
+      ({ result } = renderHook(() =>
+        useLiveTracking('TRK-20261026-TEST', { pollingInterval: 5000 })
+      ));
       await Promise.resolve();
     });
 
     trackingService.getPublicLiveLocation.mockClear();
 
-    // Simulate STOMP disconnect or error
-    act(() => {
+    // Simulate STOMP disconnect or error — startPolling() fires fetchLiveLocationFallback()
+    // which is async, so use await act(async) to drain the microtask queue fully.
+    await act(async () => {
       clientCallbacks.options.onError(new Error('Connection failed'));
+      await Promise.resolve();
     });
 
     expect(result.current.connectionStatus).toBe('polling');
@@ -139,11 +149,16 @@ describe('useLiveTracking Hook', () => {
   });
 
   it('restores live status and stops polling when WebSocket reconnects', async () => {
-    const { result } = renderHook(() => useLiveTracking('TRK-20261026-TEST'));
+    let result;
+    await act(async () => {
+      ({ result } = renderHook(() => useLiveTracking('TRK-20261026-TEST')));
+      await Promise.resolve();
+    });
 
-    // Disconnect -> polling
-    act(() => {
+    // Disconnect -> polling — onDisconnect calls startPolling() → fetchLiveLocationFallback() (async)
+    await act(async () => {
       clientCallbacks.options.onDisconnect();
+      await Promise.resolve();
     });
     expect(result.current.connectionStatus).toBe('polling');
 
@@ -174,7 +189,11 @@ describe('useLiveTracking Hook', () => {
   });
 
   it('stops polling and transitions to offline when shipment reaches DELIVERED', async () => {
-    const { result } = renderHook(() => useLiveTracking('TRK-20261026-TEST'));
+    let result;
+    await act(async () => {
+      ({ result } = renderHook(() => useLiveTracking('TRK-20261026-TEST')));
+      await Promise.resolve();
+    });
 
     act(() => {
       clientCallbacks.options.onConnect({});
@@ -196,8 +215,12 @@ describe('useLiveTracking Hook', () => {
     expect(result.current.connectionStatus).toBe('offline');
   });
 
-  it('cleans up STOMP client, subscriptions, and polling timers on unmount', () => {
-    const { unmount } = renderHook(() => useLiveTracking('TRK-20261026-TEST'));
+  it('cleans up STOMP client, subscriptions, and polling timers on unmount', async () => {
+    let unmount;
+    await act(async () => {
+      ({ unmount } = renderHook(() => useLiveTracking('TRK-20261026-TEST')));
+      await Promise.resolve();
+    });
 
     act(() => {
       clientCallbacks.options.onConnect({});

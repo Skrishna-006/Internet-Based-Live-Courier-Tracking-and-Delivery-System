@@ -99,7 +99,7 @@ describe('DriverDeliveryPage Component', () => {
 
   const renderComponent = (shipmentId = 101) => {
     return render(
-      <MemoryRouter initialEntries={[`/driver/delivery/${shipmentId}`]}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[`/driver/delivery/${shipmentId}`]}>
         <Routes>
           <Route path="/driver/delivery/:id" element={<DriverDeliveryPage />} />
         </Routes>

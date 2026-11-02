@@ -30,7 +30,7 @@ describe('LoginPage Component', () => {
 
   it('renders login form elements and links', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>
     );
@@ -44,7 +44,7 @@ describe('LoginPage Component', () => {
 
   it('validates required fields before submitting', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>
     );
@@ -59,7 +59,7 @@ describe('LoginPage Component', () => {
     mockLogin.mockRejectedValueOnce(new Error('Invalid email or password'));
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>
     );
@@ -87,7 +87,7 @@ describe('LoginPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/login']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/login']}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/customer/dashboard" element={<div data-testid="customer-dest">Customer Dashboard</div>} />
@@ -116,7 +116,7 @@ describe('LoginPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/login']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/login']}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/driver/dashboard" element={<div data-testid="driver-dest">Driver Dashboard</div>} />
@@ -145,7 +145,7 @@ describe('LoginPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/login']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/login']}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/admin/dashboard" element={<div data-testid="admin-dest">Admin Dashboard</div>} />

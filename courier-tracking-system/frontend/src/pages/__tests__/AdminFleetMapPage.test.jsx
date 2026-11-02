@@ -177,7 +177,7 @@ describe('AdminFleetMapPage Component', () => {
     adminService.getFleet.mockReturnValue(new Promise(() => {})); // Never resolves
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -193,7 +193,7 @@ describe('AdminFleetMapPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -206,7 +206,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('renders fleet map, metric counters, and vehicles once data is loaded', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -231,7 +231,7 @@ describe('AdminFleetMapPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -286,7 +286,7 @@ describe('AdminFleetMapPage Component', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -303,7 +303,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('handles real-time STOMP WebSocket fleet updates', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -346,7 +346,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('prevents older WebSocket updates from overwriting newer coordinates', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -380,7 +380,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('removes vehicle from active fleet when status transitions to terminal DELIVERED', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -415,7 +415,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('allows searching and filtering by freshness (Live / Stale)', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -446,7 +446,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('cleans up and deactivates STOMP client on unmount', async () => {
     const { unmount } = render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -468,7 +468,7 @@ describe('AdminFleetMapPage Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/admin/fleet']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/admin/fleet']}>
         <Routes>
           <Route
             path="/admin/fleet"
@@ -491,7 +491,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('handles courier reassignment by resolving the new agent without reusing previous agent name', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -531,7 +531,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('removes vehicle from active fleet for all terminal statuses: RETURNED and CANCELLED', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -576,7 +576,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('re-subscribes, unsubscribes prior subscription, and refreshes REST snapshot on WebSocket reconnection', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -605,7 +605,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('heals missed terminal updates when reconnecting via REST snapshot', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -637,7 +637,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('displays accurate wording distinguishing active accounts from lack of telemetry', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );
@@ -655,7 +655,7 @@ describe('AdminFleetMapPage Component', () => {
 
   it('handles incoming WebSocket broadcast with missing or invalid timestamp safely', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AdminFleetMapPage />
       </MemoryRouter>
     );

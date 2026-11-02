@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
 
@@ -101,7 +101,7 @@ describe('App Routing & Authentication Integration', () => {
 
   it('renders landing page on root route / without authentication', async () => {
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
@@ -110,22 +110,28 @@ describe('App Routing & Authentication Integration', () => {
     expect(
       screen.getByText(/Internet-Based Live Courier Tracking & Delivery System/i)
     ).toBeInTheDocument();
+
+    // Drain LandingPage's async checkBackendHealth() useEffect to avoid act() warning
+    await act(async () => {});
   });
 
-  it('renders public live tracking view on /track route without authentication', () => {
+  it('renders public live tracking view on /track route without authentication', async () => {
     render(
-      <MemoryRouter initialEntries={['/track']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/track']}>
         <App />
       </MemoryRouter>
     );
 
     expect(screen.getByText(/Ready to Track/i)).toBeInTheDocument();
     expect(screen.getByText(/Track Your Delivery in Real Time/i)).toBeInTheDocument();
+
+    // Drain any pending async effects (AuthContext initial load)
+    await act(async () => {});
   });
 
-  it('renders sign in and register navbar links when unauthenticated', () => {
+  it('renders sign in and register navbar links when unauthenticated', async () => {
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
@@ -133,6 +139,9 @@ describe('App Routing & Authentication Integration', () => {
     expect(screen.getByTestId('navbar-login-link')).toBeInTheDocument();
     expect(screen.getByTestId('navbar-register-link')).toBeInTheDocument();
     expect(screen.queryByTestId('navbar-logout-btn')).not.toBeInTheDocument();
+
+    // Drain LandingPage's async checkBackendHealth() useEffect to avoid act() warning
+    await act(async () => {});
   });
 
   it('renders customer role badge, shortcuts, and logout when logged in as customer', async () => {
@@ -155,7 +164,7 @@ describe('App Routing & Authentication Integration', () => {
     );
 
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
@@ -189,7 +198,7 @@ describe('App Routing & Authentication Integration', () => {
     );
 
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
@@ -222,7 +231,7 @@ describe('App Routing & Authentication Integration', () => {
     );
 
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
@@ -237,7 +246,7 @@ describe('App Routing & Authentication Integration', () => {
 
   it('redirects unauthenticated user accessing customer dashboard to /login', async () => {
     render(
-      <MemoryRouter initialEntries={['/customer/dashboard']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/customer/dashboard']}>
         <App />
       </MemoryRouter>
     );
@@ -257,7 +266,7 @@ describe('App Routing & Authentication Integration', () => {
     localStorage.setItem('token', token);
 
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/']}>
         <App />
       </MemoryRouter>
     );
@@ -295,7 +304,7 @@ describe('App Routing & Authentication Integration', () => {
     );
 
     const { unmount } = render(
-      <MemoryRouter initialEntries={['/customer/dashboard']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/customer/dashboard']}>
         <App />
       </MemoryRouter>
     );
@@ -307,7 +316,7 @@ describe('App Routing & Authentication Integration', () => {
     unmount();
 
     render(
-      <MemoryRouter initialEntries={['/customer/book']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/customer/book']}>
         <App />
       </MemoryRouter>
     );
@@ -319,7 +328,7 @@ describe('App Routing & Authentication Integration', () => {
 
   it('redirects unauthenticated user accessing /customer/book to /login', async () => {
     render(
-      <MemoryRouter initialEntries={['/customer/book']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/customer/book']}>
         <App />
       </MemoryRouter>
     );
@@ -349,7 +358,7 @@ describe('App Routing & Authentication Integration', () => {
     );
 
     render(
-      <MemoryRouter initialEntries={['/driver/dashboard']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/driver/dashboard']}>
         <App />
       </MemoryRouter>
     );
@@ -381,7 +390,7 @@ describe('App Routing & Authentication Integration', () => {
     );
 
     render(
-      <MemoryRouter initialEntries={['/driver/delivery/101']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/driver/delivery/101']}>
         <App />
       </MemoryRouter>
     );
@@ -393,7 +402,7 @@ describe('App Routing & Authentication Integration', () => {
 
   it('renders not found page on unknown route', () => {
     render(
-      <MemoryRouter initialEntries={['/some/unknown/page']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/some/unknown/page']}>
         <App />
       </MemoryRouter>
     );

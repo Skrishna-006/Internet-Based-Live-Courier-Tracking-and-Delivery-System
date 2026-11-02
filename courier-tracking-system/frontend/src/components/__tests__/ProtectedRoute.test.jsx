@@ -36,7 +36,7 @@ describe('ProtectedRoute Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/protected']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/protected']}>
         <ProtectedRoute>
           <div>Protected Content</div>
         </ProtectedRoute>
@@ -55,7 +55,7 @@ describe('ProtectedRoute Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/customer/dashboard']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/customer/dashboard']}>
         <Routes>
           <Route
             path="/customer/dashboard"
@@ -83,7 +83,7 @@ describe('ProtectedRoute Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/customer/dashboard']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/customer/dashboard']}>
         <Routes>
           <Route
             path="/customer/dashboard"
@@ -108,7 +108,7 @@ describe('ProtectedRoute Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/admin/dashboard']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/admin/dashboard']}>
         <Routes>
           <Route
             path="/admin/dashboard"
