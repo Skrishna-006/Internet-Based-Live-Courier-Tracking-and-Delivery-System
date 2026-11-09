@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Check,
   ArrowRight,
+  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { adminService } from '../services/api';
@@ -144,6 +145,13 @@ export default function AdminDashboardPage() {
   const [detailsError, setDetailsError] = useState(null);
   const [shipmentDetails, setShipmentDetails] = useState(null);
   const [shipmentEvents, setShipmentEvents] = useState([]);
+
+  // Agent Assignment State
+  const [assignModalShipmentId, setAssignModalShipmentId] = useState(null);
+  const [selectedAgentId, setSelectedAgentId] = useState('');
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [assignError, setAssignError] = useState(null);
+  const [assignSuccess, setAssignSuccess] = useState(false);
 
   // Request Sequence & Active Modal References (Race Condition & Cancellation Protection)
   const shipmentRequestIdRef = useRef(0);
@@ -283,6 +291,38 @@ export default function AdminDashboardPage() {
     activeModalShipmentIdRef.current = null;
     setSelectedShipmentId(null);
   };
+
+  // Assign delivery agent to a CREATED shipment
+  const handleAssignAgent = useCallback(async (shipmentId) => {
+    if (!selectedAgentId) {
+      setAssignError('Please select a delivery agent.');
+      return;
+    }
+    setAssignLoading(true);
+    setAssignError(null);
+    setAssignSuccess(false);
+    try {
+      const res = await adminService.assignAgent(shipmentId, Number(selectedAgentId));
+      if (res && res.success) {
+        setAssignSuccess(true);
+        setAssignModalShipmentId(null);
+        setSelectedAgentId('');
+        // Refresh lists
+        fetchShipments();
+        fetchOverview();
+        // If details modal is open for this shipment, refresh it
+        if (selectedShipmentId === shipmentId) {
+          fetchShipmentDetails(shipmentId);
+        }
+      } else {
+        setAssignError(res?.message || 'Assignment failed. Please try again.');
+      }
+    } catch (err) {
+      setAssignError(err?.message || 'Error assigning agent.');
+    } finally {
+      setAssignLoading(false);
+    }
+  }, [selectedAgentId, fetchShipments, fetchOverview, selectedShipmentId, fetchShipmentDetails]);
 
   // Dedicated effects to avoid redundant calls to overview and agents upon shipment paging/filtering
   useEffect(() => {
@@ -821,14 +861,69 @@ export default function AdminDashboardPage() {
 
                             {/* Actions */}
                             <td className="py-3 px-4 text-right">
-                              <button
-                                onClick={() => fetchShipmentDetails(shipment.id)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-purple-700 text-xs font-semibold shadow-sm transition-colors"
-                                data-testid={`view-shipment-${shipment.id}`}
-                              >
-                                <span>Details</span>
-                                <ArrowRight className="w-3 h-3 text-purple-600" />
-                              </button>
+                              <div className="flex items-center justify-end gap-2">
+                                {/* Assign Agent - only shown for unassigned / CREATED shipments */}
+                                {!shipment.assignedAgentId && shipment.status === 'CREATED' && (
+                                  <div className="relative">
+                                    {assignModalShipmentId === shipment.id ? (
+                                      <div className="flex items-center gap-1.5" data-testid={`assign-panel-${shipment.id}`}>
+                                        <select
+                                          value={selectedAgentId}
+                                          onChange={(e) => { setSelectedAgentId(e.target.value); setAssignError(null); }}
+                                          className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white shadow-sm"
+                                          data-testid={`assign-agent-select-${shipment.id}`}
+                                          disabled={assignLoading}
+                                        >
+                                          <option value="">— Select Agent —</option>
+                                          {agents
+                                            .filter((a) => a.enabled !== false)
+                                            .map((a) => (
+                                              <option key={a.id} value={a.id}>
+                                                {a.fullName}
+                                              </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                          onClick={() => handleAssignAgent(shipment.id)}
+                                          disabled={assignLoading || !selectedAgentId}
+                                          className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
+                                          data-testid={`assign-confirm-btn-${shipment.id}`}
+                                        >
+                                          {assignLoading ? '...' : <><Check className="w-3 h-3" /><span>Assign</span></>}
+                                        </button>
+                                        <button
+                                          onClick={() => { setAssignModalShipmentId(null); setSelectedAgentId(''); setAssignError(null); }}
+                                          className="inline-flex items-center px-1.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 text-xs shadow-sm transition-colors"
+                                          data-testid={`assign-cancel-btn-${shipment.id}`}
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => { setAssignModalShipmentId(shipment.id); setAssignError(null); setAssignSuccess(false); }}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold shadow-sm transition-colors"
+                                        data-testid={`assign-agent-btn-${shipment.id}`}
+                                      >
+                                        <UserCheck className="w-3 h-3" />
+                                        <span>Assign</span>
+                                      </button>
+                                    )}
+                                    {assignError && assignModalShipmentId === shipment.id && (
+                                      <p className="absolute top-full left-0 mt-1 text-[10px] text-red-600 bg-white border border-red-200 rounded-lg px-2 py-1 shadow z-10 whitespace-nowrap" data-testid="assign-error-msg">{assignError}</p>
+                                    )}
+                                  </div>
+                                )}
+
+                                <button
+                                  onClick={() => fetchShipmentDetails(shipment.id)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-purple-700 text-xs font-semibold shadow-sm transition-colors"
+                                  data-testid={`view-shipment-${shipment.id}`}
+                                >
+                                  <span>Details</span>
+                                  <ArrowRight className="w-3 h-3 text-purple-600" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );

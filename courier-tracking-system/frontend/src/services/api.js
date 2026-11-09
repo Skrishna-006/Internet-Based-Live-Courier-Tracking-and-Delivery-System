@@ -69,6 +69,8 @@ export const shipmentService = {
     api.post(`/shipments/${id}/delivery-otp`),
   verifyDeliveryOtp: (id, verificationData) =>
     api.post(`/shipments/${id}/delivery/verify-otp`, verificationData),
+  getCustomerDeliveryPin: (id) =>
+    api.get(`/shipments/${id}/delivery-pin`),
 };
 
 export const agentService = {
@@ -91,6 +93,8 @@ export const adminService = {
     api.get(`/admin/shipments/${id}/events`),
   getAgents: (params = {}) =>
     api.get('/admin/agents', { params }),
+  assignAgent: (shipmentId, agentId) =>
+    api.patch(`/shipments/${shipmentId}/assign`, { agentId }),
   getFleet: () =>
     api.get('/admin/fleet'),
 };

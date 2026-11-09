@@ -85,6 +85,9 @@ public class Shipment implements Serializable {
     @Column(name = "delivery_otp_last_sent_at")
     private Instant deliveryOtpLastSentAt;
 
+    @Column(name = "customer_delivery_pin", length = 10)
+    private String customerDeliveryPin;
+
     @Column(name = "current_latitude", precision = 10, scale = 7)
     private BigDecimal currentLatitude;
 
@@ -325,6 +328,14 @@ public class Shipment implements Serializable {
 
     public void setDeliveryOtpLastSentAt(Instant deliveryOtpLastSentAt) {
         this.deliveryOtpLastSentAt = deliveryOtpLastSentAt;
+    }
+
+    public String getCustomerDeliveryPin() {
+        return customerDeliveryPin;
+    }
+
+    public void setCustomerDeliveryPin(String customerDeliveryPin) {
+        this.customerDeliveryPin = customerDeliveryPin;
     }
 
     public BigDecimal getCurrentLatitude() {

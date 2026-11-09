@@ -5,6 +5,7 @@ import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.DeliveryConfirmationResponse;
 import com.courier.tracking.dto.DeliveryOtpResponse;
+import com.courier.tracking.dto.CustomerDeliveryPinResponse;
 import com.courier.tracking.dto.LocationUpdateRequest;
 import com.courier.tracking.dto.LocationUpdateResponse;
 import com.courier.tracking.dto.PriceEstimateResponse;
@@ -139,6 +140,21 @@ public class ShipmentController {
     ) {
         DeliveryOtpResponse response = shipmentService.generateDeliveryOtp(id, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Delivery OTP generated successfully", response));
+    }
+
+    /**
+     * Authenticated customer-only endpoint to retrieve the active delivery PIN for their consignment.
+     * Enforces ROLE_CUSTOMER authority and verifies shipment ownership.
+     * Never exposes PIN to delivery agents or public tracking.
+     */
+    @GetMapping("/{id}/delivery-pin")
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
+    public ResponseEntity<ApiResponse<CustomerDeliveryPinResponse>> getCustomerDeliveryPin(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        CustomerDeliveryPinResponse response = shipmentService.getCustomerDeliveryPin(id, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("Delivery PIN retrieved successfully", response));
     }
 
     /**

@@ -6,6 +6,7 @@ import com.courier.tracking.dto.AssignAgentRequest;
 import com.courier.tracking.dto.CreateShipmentRequest;
 import com.courier.tracking.dto.DeliveryConfirmationResponse;
 import com.courier.tracking.dto.DeliveryOtpResponse;
+import com.courier.tracking.dto.CustomerDeliveryPinResponse;
 import com.courier.tracking.dto.LocationUpdateRequest;
 import com.courier.tracking.dto.LocationUpdateResponse;
 import com.courier.tracking.dto.PriceEstimateResponse;
@@ -680,6 +681,7 @@ public class ShipmentService {
         Instant expiresAt = now.plus(Duration.ofMinutes(10));
 
         shipment.setDeliveryOtpHash(hashedOtp);
+        shipment.setCustomerDeliveryPin(rawOtp);
         shipment.setDeliveryOtpExpiresAt(expiresAt);
         shipment.setDeliveryOtpAttempts(0);
         shipment.setDeliveryOtpLastSentAt(now);
@@ -705,6 +707,80 @@ public class ShipmentService {
 
     public void setExposeOtpInResponse(boolean exposeOtpInResponse) {
         this.exposeOtpInResponse = exposeOtpInResponse;
+    }
+
+    /**
+     * Retrieves the active delivery PIN for an authenticated customer on their consignment.
+     * Enforces ROLE_CUSTOMER authority, verifies ownership, checks status (OUT_FOR_DELIVERY),
+     * checks failed-attempt lockout, and returns or initializes the active PIN.
+     * Never exposes PIN to delivery agents or public tracking APIs.
+     */
+    @Transactional
+    public CustomerDeliveryPinResponse getCustomerDeliveryPin(Long shipmentId, String authenticatedEmail) {
+        if (shipmentId == null || shipmentId <= 0) {
+            throw new IllegalArgumentException("Shipment ID must be a positive number");
+        }
+
+        Shipment shipment = shipmentRepository.findById(shipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment", "id", shipmentId));
+
+        User currentUser = getValidatedUser(authenticatedEmail);
+
+        if (currentUser.getRole().getName() != RoleName.ROLE_CUSTOMER) {
+            log.warn("Access denied: non-customer '{}' (role={}) attempted to access delivery PIN for shipment '{}'",
+                    currentUser.getEmail(), currentUser.getRole().getName(), shipment.getTrackingNumber());
+            throw new AccessDeniedException("Access denied: Only the recipient customer may retrieve the delivery PIN");
+        }
+
+        if (shipment.getCustomer() == null || !shipment.getCustomer().getId().equals(currentUser.getId())) {
+            log.warn("Access denied: customer '{}' (id={}) is not the owner of shipment '{}' (customerId={})",
+                    currentUser.getEmail(), currentUser.getId(), shipment.getTrackingNumber(),
+                    shipment.getCustomer() != null ? shipment.getCustomer().getId() : null);
+            throw new AccessDeniedException("Access denied: You do not have permission to view the delivery PIN for this shipment");
+        }
+
+        if (shipment.getStatus() == ShipmentStatus.DELIVERED) {
+            throw new IllegalStateException("Shipment has already been delivered");
+        }
+        if (shipment.getStatus() == ShipmentStatus.CANCELLED || shipment.getStatus() == ShipmentStatus.RETURNED) {
+            throw new IllegalStateException(String.format("Cannot view delivery PIN for shipment in terminal status '%s'", shipment.getStatus()));
+        }
+        if (shipment.getStatus() != ShipmentStatus.OUT_FOR_DELIVERY) {
+            throw new IllegalStateException(String.format("Delivery PIN is only active when shipment is OUT_FOR_DELIVERY (current: '%s')", shipment.getStatus()));
+        }
+
+        if (shipment.getDeliveryOtpAttempts() >= 3) {
+            throw new IllegalStateException("Delivery PIN is locked due to excessive failed verification attempts. Please contact courier dispatch.");
+        }
+
+        Instant now = Instant.now();
+        String activePin = shipment.getCustomerDeliveryPin();
+        Instant expiresAt = shipment.getDeliveryOtpExpiresAt();
+
+        if (activePin == null || expiresAt == null || now.isAfter(expiresAt)) {
+            int otpNumber = 100_000 + RANDOM.nextInt(900_000);
+            activePin = String.valueOf(otpNumber);
+            String hashedOtp = passwordEncoder.encode(activePin);
+            expiresAt = now.plus(Duration.ofMinutes(10));
+
+            shipment.setDeliveryOtpHash(hashedOtp);
+            shipment.setCustomerDeliveryPin(activePin);
+            shipment.setDeliveryOtpExpiresAt(expiresAt);
+            shipment.setDeliveryOtpAttempts(0);
+            shipment.setDeliveryOtpLastSentAt(now);
+
+            shipmentRepository.save(shipment);
+            log.info("Delivery PIN initialized for customer '{}' on shipment '{}', expiresAt={}",
+                    currentUser.getEmail(), shipment.getTrackingNumber(), expiresAt);
+        }
+
+        return new CustomerDeliveryPinResponse(
+                shipment.getId(),
+                shipment.getTrackingNumber(),
+                activePin,
+                expiresAt,
+                "Delivery PIN active. Please share this PIN verbally with your delivery courier upon handover."
+        );
     }
 
     /**
@@ -764,6 +840,7 @@ public class ShipmentService {
         // Check attempt threshold before verification
         if (shipment.getDeliveryOtpAttempts() >= 3) {
             shipment.setDeliveryOtpHash(null);
+            shipment.setCustomerDeliveryPin(null);
             shipmentRepository.save(shipment);
             log.warn("Delivery confirmation rejected: max attempts exceeded for shipment '{}'", shipment.getTrackingNumber());
             throw new IllegalStateException("Maximum OTP verification attempts exceeded. Please request a new OTP.");
@@ -778,6 +855,7 @@ public class ShipmentService {
             shipment.setDeliveryOtpAttempts(newAttempts);
             if (newAttempts >= 3) {
                 shipment.setDeliveryOtpHash(null);
+                shipment.setCustomerDeliveryPin(null);
                 log.warn("Delivery OTP invalidated due to exceeding max attempts on shipment '{}'", shipment.getTrackingNumber());
             }
             shipmentRepository.save(shipment);
@@ -791,6 +869,7 @@ public class ShipmentService {
 
         // Successful verification: consume OTP (one-time use)
         shipment.setDeliveryOtpHash(null);
+        shipment.setCustomerDeliveryPin(null);
         shipment.setDeliveryOtpExpiresAt(null);
         shipment.setDeliveryOtpAttempts(0);
 

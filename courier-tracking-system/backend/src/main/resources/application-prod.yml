@@ -49,3 +49,16 @@ app:
     min-price: ${APP_PRICING_MIN_PRICE:10.00}
   otp:
     expose-in-response: false
+  provisioning:
+    enabled: ${APP_PROVISIONING_ENABLED:false}
+    admin:
+      email: ${INITIAL_ADMIN_EMAIL:}
+      password: ${INITIAL_ADMIN_PASSWORD:}
+      name: ${INITIAL_ADMIN_NAME:System Administrator}
+      phone: ${INITIAL_ADMIN_PHONE:}
+    agent:
+      email: ${INITIAL_AGENT_EMAIL:}
+      password: ${INITIAL_AGENT_PASSWORD:}
+      name: ${INITIAL_AGENT_NAME:Initial Delivery Agent}
+      phone: ${INITIAL_AGENT_PHONE:}
+
