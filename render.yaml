@@ -44,7 +44,6 @@ services:
   - type: web
     name: courier-tracking-frontend
     runtime: static
-    plan: free
     rootDir: courier-tracking-system/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
