@@ -20,6 +20,7 @@ vi.mock('../services/api', () => ({
     sendLiveLocation: vi.fn(),
     generateDeliveryOtp: vi.fn(),
     verifyDeliveryOtp: vi.fn(),
+    getCustomerDeliveryPin: vi.fn(),
     updateStatus: vi.fn(),
   },
   agentService: {

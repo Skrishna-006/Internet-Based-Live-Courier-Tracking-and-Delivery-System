@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -79,13 +80,22 @@ public class TrackingService {
 
         log.debug("Public tracking summary served for tracking number: {}", normalizedTrackingNumber);
 
+        BigDecimal destinationLatitude = null;
+        BigDecimal destinationLongitude = null;
+        if (shipment.getStatus() == ShipmentStatus.OUT_FOR_DELIVERY) {
+            destinationLatitude = shipment.getRecipientLatitude();
+            destinationLongitude = shipment.getRecipientLongitude();
+        }
+
         return new PublicTrackingResponse(
                 shipment.getTrackingNumber(),
                 shipment.getStatus(),
                 shipment.getEstimatedDeliveryAt(),
                 shipment.getActualDeliveryAt(),
                 shipment.getCreatedAt(),
-                milestones
+                milestones,
+                destinationLatitude,
+                destinationLongitude
         );
     }
 

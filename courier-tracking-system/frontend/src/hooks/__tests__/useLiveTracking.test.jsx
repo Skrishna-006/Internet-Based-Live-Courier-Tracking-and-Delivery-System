@@ -231,4 +231,47 @@ describe('useLiveTracking Hook', () => {
     expect(mockSubscription.unsubscribe).toHaveBeenCalled();
     expect(mockStompClient.deactivate).toHaveBeenCalled();
   });
+
+  it('returns destination when shipment has destinationLatitude and destinationLongitude', async () => {
+    trackingService.getPublicTracking.mockResolvedValue({
+      data: {
+        trackingNumber: 'TRK-20261026-TEST',
+        status: 'OUT_FOR_DELIVERY',
+        destinationLatitude: 13.0827,
+        destinationLongitude: 80.2707,
+        milestones: [],
+      },
+    });
+
+    const { result } = renderHook(() => useLiveTracking('TRK-20261026-TEST'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.destination).not.toBeNull();
+    expect(result.current.destination.latitude).toBe(13.0827);
+    expect(result.current.destination.longitude).toBe(80.2707);
+    expect(result.current.destination.label).toBe('Delivery Destination');
+  });
+
+  it('returns null destination when shipment has no destination coordinates', async () => {
+    trackingService.getPublicTracking.mockResolvedValue({
+      data: {
+        trackingNumber: 'TRK-20261026-TEST',
+        status: 'OUT_FOR_DELIVERY',
+        destinationLatitude: null,
+        destinationLongitude: null,
+        milestones: [],
+      },
+    });
+
+    const { result } = renderHook(() => useLiveTracking('TRK-20261026-TEST'));
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.destination).toBeNull();
+  });
 });

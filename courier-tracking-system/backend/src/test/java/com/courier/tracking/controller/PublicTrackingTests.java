@@ -249,4 +249,17 @@ class PublicTrackingTests {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.success").value(false));
     }
+    @Test
+    @DisplayName("8. Out for delivery shipment provides destination coordinates for live route map visualization")
+    void testOutForDeliveryProvidesDestinationCoordinates() throws Exception {
+        testShipment.setStatus(ShipmentStatus.OUT_FOR_DELIVERY);
+        shipmentRepository.save(testShipment);
+
+        mockMvc.perform(get("/api/v1/tracking/public/TRK-20261026-PUBLIC01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.status").value("OUT_FOR_DELIVERY"))
+                .andExpect(jsonPath("$.data.destinationLatitude").value(30.2672000))
+                .andExpect(jsonPath("$.data.destinationLongitude").value(-97.7431000));
+    }
 }

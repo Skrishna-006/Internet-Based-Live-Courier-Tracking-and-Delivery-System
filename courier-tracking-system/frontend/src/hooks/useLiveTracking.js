@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { trackingService } from '../services/api';
 import { createStompClient } from '../services/websocket';
 
@@ -30,6 +30,23 @@ export function useLiveTracking(trackingNumber, options = {}) {
   const isPollingBusyRef = useRef(false);
   const isMountedRef = useRef(true);
   const activeWsConnectedRef = useRef(false);
+
+  const destination = useMemo(() => {
+    if (
+      shipment &&
+      shipment.destinationLatitude != null &&
+      shipment.destinationLongitude != null &&
+      !isNaN(Number(shipment.destinationLatitude)) &&
+      !isNaN(Number(shipment.destinationLongitude))
+    ) {
+      return {
+        latitude: Number(shipment.destinationLatitude),
+        longitude: Number(shipment.destinationLongitude),
+        label: 'Delivery Destination',
+      };
+    }
+    return null;
+  }, [shipment]);
 
   // Poll live location fallback
   const fetchLiveLocationFallback = useCallback(async (trk) => {
@@ -264,5 +281,6 @@ export function useLiveTracking(trackingNumber, options = {}) {
     error,
     lastUpdatedAt,
     refresh,
+    destination,
   };
 }

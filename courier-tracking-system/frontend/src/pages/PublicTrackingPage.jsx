@@ -32,6 +32,7 @@ export default function PublicTrackingPage() {
     error,
     lastUpdatedAt,
     refresh,
+    destination,
   } = useLiveTracking(activeTrackingNumber);
 
   const handleSearch = (e) => {
@@ -230,7 +231,7 @@ export default function PublicTrackingPage() {
             <LiveTrackingMap
               trackingNumber={activeTrackingNumber}
               location={location}
-              destination={null}
+              destination={destination}
               connectionStatus={connectionStatus}
               lastUpdatedAt={lastUpdatedAt}
               height="480px"

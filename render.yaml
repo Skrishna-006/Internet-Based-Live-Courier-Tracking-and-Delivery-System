@@ -1,0 +1,75 @@
+# Render Infrastructure as Code Blueprint
+# https://render.com/docs/blueprint-spec
+
+services:
+  # =======================================================
+  # 1. Spring Boot Backend Web Service
+  # =======================================================
+  - type: web
+    name: courier-tracking-backend
+    runtime: docker
+    dockerfilePath: ./courier-tracking-system/backend/Dockerfile
+    dockerContext: ./courier-tracking-system/backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Render JDBC database connection URL (must start with jdbc:postgresql://)
+      - key: DB_URL
+        fromDatabase:
+          name: courier-tracking-db
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: courier-tracking-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: courier-tracking-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://courier-tracking-frontend.onrender.com
+      - key: APP_PROVISIONING_ENABLED
+        value: "true"
+      - key: INITIAL_ADMIN_EMAIL
+        value: admin@courier.local
+      - key: INITIAL_ADMIN_PASSWORD
+        generateValue: true
+      - key: INITIAL_ADMIN_NAME
+        value: System Administrator
+      - key: INITIAL_ADMIN_PHONE
+        value: "+10000000000"
+
+  # =======================================================
+  # 2. Vite + React Frontend Static Site
+  # =======================================================
+  - type: web
+    name: courier-tracking-frontend
+    runtime: static
+    plan: free
+    region: oregon
+    rootDir: courier-tracking-system/frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://courier-tracking-backend.onrender.com/api/v1
+      - key: VITE_WS_URL
+        value: wss://courier-tracking-backend.onrender.com/ws
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+# =======================================================
+# 3. PostgreSQL Database
+# =======================================================
+databases:
+  - name: courier-tracking-db
+    plan: free
+    region: oregon
+    databaseName: courier_tracking
+    user: courier_user
