@@ -1,26 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Package,
   PlusCircle,
   Navigation,
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
   Clock,
   MapPin,
   RefreshCw,
   AlertCircle,
-  CheckCircle,
   Truck,
-  RotateCcw,
-  Ban,
-  Calendar,
+  CheckCircle2,
   Key,
+  ShieldCheck,
+  Calendar,
+  Layers,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { shipmentService } from '../services/api';
 import CustomerDeliveryPinModal from '../components/CustomerDeliveryPinModal';
+import DashboardCard from '../components/DashboardCard';
 
 const STATUS_FILTERS = [
   { key: 'ALL', label: 'All Shipments' },
@@ -107,99 +107,119 @@ export default function CustomerDashboardPage() {
     }
   };
 
+  // Derive real summary counts from retrieved shipments
+  const metrics = useMemo(() => {
+    const inTransitCount = shipments.filter((s) =>
+      ['IN_TRANSIT', 'OUT_FOR_DELIVERY', 'PICKED_UP'].includes(s.status)
+    ).length;
+    const deliveredCount = shipments.filter((s) => s.status === 'DELIVERED').length;
+    const pendingCount = shipments.filter((s) =>
+      ['CREATED', 'ASSIGNED'].includes(s.status)
+    ).length;
+
+    return {
+      total: totalElements,
+      inTransit: inTransitCount,
+      delivered: deliveredCount,
+      pending: pendingCount,
+    };
+  }, [shipments, totalElements]);
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'DELIVERED':
         return {
           label: 'Delivered',
-          classes: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-          dot: 'bg-emerald-500',
+          classes: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+          dot: 'bg-emerald-400',
         };
       case 'OUT_FOR_DELIVERY':
         return {
           label: 'Out for Delivery',
-          classes: 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse',
-          dot: 'bg-blue-500',
+          classes: 'bg-blue-500/10 text-blue-400 border-blue-500/30 animate-pulse',
+          dot: 'bg-blue-400',
         };
       case 'IN_TRANSIT':
         return {
           label: 'In Transit',
-          classes: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-          dot: 'bg-indigo-500',
+          classes: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+          dot: 'bg-indigo-400',
         };
       case 'PICKED_UP':
         return {
           label: 'Picked Up',
-          classes: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-          dot: 'bg-cyan-500',
+          classes: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+          dot: 'bg-cyan-400',
         };
       case 'ASSIGNED':
         return {
           label: 'Assigned',
-          classes: 'bg-violet-50 text-violet-700 border-violet-200',
-          dot: 'bg-violet-500',
+          classes: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
+          dot: 'bg-purple-400',
         };
       case 'CREATED':
         return {
           label: 'Created',
-          classes: 'bg-slate-100 text-slate-700 border-slate-200',
-          dot: 'bg-slate-500',
+          classes: 'bg-slate-500/10 text-slate-300 border-slate-500/30',
+          dot: 'bg-slate-400',
         };
       case 'ATTEMPT_FAILED':
         return {
           label: 'Attempt Failed',
-          classes: 'bg-amber-50 text-amber-800 border-amber-200',
-          dot: 'bg-amber-500',
+          classes: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+          dot: 'bg-amber-400',
         };
       case 'RETURNED':
         return {
           label: 'Returned',
-          classes: 'bg-purple-50 text-purple-700 border-purple-200',
-          dot: 'bg-purple-500',
+          classes: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+          dot: 'bg-orange-400',
         };
       case 'CANCELLED':
         return {
           label: 'Cancelled',
-          classes: 'bg-rose-50 text-rose-700 border-rose-200',
-          dot: 'bg-rose-500',
+          classes: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+          dot: 'bg-rose-400',
         };
       default:
         return {
           label: status,
-          classes: 'bg-slate-100 text-slate-700 border-slate-200',
+          classes: 'bg-slate-800 text-slate-300 border-slate-700',
           dot: 'bg-slate-500',
         };
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#263449]">
         <div>
-          <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-1">
+          <div className="flex items-center gap-2 text-cyan-400 font-semibold text-xs tracking-wider uppercase mb-1">
             <Package className="w-4 h-4" />
             <span>Customer Consignment Portal</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">My Shipments</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Welcome back, <span className="font-semibold text-slate-700">{user?.fullName || user?.email}</span>. Track active deliveries and view your shipping history.
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] tracking-tight">
+            My Shipments
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Welcome back, <span className="font-semibold text-slate-200">{user?.fullName || user?.email}</span>. Track active deliveries and view your shipping history.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <button
             onClick={fetchShipments}
             disabled={loading}
             aria-label="Refresh shipments"
-            className="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors"
+            className="p-2.5 rounded-xl border border-[#263449] bg-[#121C2E] hover:bg-[#18243A] text-slate-300 hover:text-white transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-400' : ''}`} />
           </button>
           <Link
             to="/customer/book"
             data-testid="btn-book-shipment"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-glow-blue"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Book New Shipment</span>
@@ -207,8 +227,40 @@ export default function CustomerDashboardPage() {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <DashboardCard
+          title="Total Shipments"
+          value={metrics.total}
+          subtitle="All time bookings"
+          icon={Package}
+          accentColor="blue"
+        />
+        <DashboardCard
+          title="In-Transit / Active"
+          value={metrics.inTransit}
+          subtitle="Currently on the move"
+          icon={Truck}
+          accentColor="cyan"
+        />
+        <DashboardCard
+          title="Delivered"
+          value={metrics.delivered}
+          subtitle="Successfully handed over"
+          icon={CheckCircle2}
+          accentColor="emerald"
+        />
+        <DashboardCard
+          title="Pending Pickup"
+          value={metrics.pending}
+          subtitle="Awaiting courier dispatch"
+          icon={Clock}
+          accentColor="purple"
+        />
+      </div>
+
       {/* Status Filter Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
         {STATUS_FILTERS.map((f) => {
           const isActive = statusFilter === f.key;
           return (
@@ -216,10 +268,10 @@ export default function CustomerDashboardPage() {
               key={f.key}
               onClick={() => handleFilterChange(f.key)}
               data-testid={`filter-${f.key.toLowerCase()}`}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors border ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
                 isActive
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-glow-blue'
+                  : 'bg-[#121C2E] text-slate-400 border-[#263449] hover:bg-[#18243A] hover:text-[#F8FAFC]'
               }`}
             >
               {f.label}
@@ -232,15 +284,15 @@ export default function CustomerDashboardPage() {
       {error && (
         <div
           role="alert"
-          className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between gap-3 animate-in fade-in"
+          className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between gap-3 animate-in fade-in"
         >
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
             <span>{error}</span>
           </div>
           <button
             onClick={fetchShipments}
-            className="px-3 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 font-bold text-rose-900 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 font-bold text-rose-200 transition-colors"
           >
             Retry
           </button>
@@ -249,9 +301,9 @@ export default function CustomerDashboardPage() {
 
       {/* Loading Skeleton */}
       {loading && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-indigo-600 mx-auto" />
-          <p className="text-xs font-semibold text-slate-500">Loading your consignments...</p>
+        <div className="bg-[#121C2E] border border-[#263449] rounded-2xl p-12 text-center space-y-3">
+          <RefreshCw className="w-7 h-7 animate-spin text-blue-500 mx-auto" />
+          <p className="text-xs font-semibold text-slate-400">Loading your consignments...</p>
         </div>
       )}
 
@@ -259,23 +311,23 @@ export default function CustomerDashboardPage() {
       {!loading && !error && shipments.length === 0 && (
         <div
           data-testid="empty-shipments-state"
-          className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center space-y-4"
+          className="bg-[#121C2E] border border-dashed border-[#263449] rounded-2xl p-12 text-center space-y-4"
         >
-          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-            <Package className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-2xl bg-[#18243A] border border-[#263449] text-blue-400 flex items-center justify-center mx-auto shadow-inner">
+            <Package className="w-7 h-7" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-800">No shipments found</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+            <h3 className="text-base font-bold text-[#F8FAFC]">No shipments found</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
               {statusFilter === 'ALL'
                 ? 'You have not booked any courier consignments yet. Create your first booking to start shipping.'
                 : `No shipments currently match the status "${statusFilter}".`}
             </p>
           </div>
-          <div>
+          <div className="pt-2">
             <Link
               to="/customer/book"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-glow-blue"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Book a Shipment Now</span>
@@ -287,41 +339,41 @@ export default function CustomerDashboardPage() {
       {/* Shipment Content List / Table */}
       {!loading && !error && shipments.length > 0 && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+          <div className="bg-[#121C2E] border border-[#263449] rounded-2xl shadow-dark-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
-                    <th className="py-3 px-4">Tracking Code</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Destination</th>
-                    <th className="py-3 px-4">Weight</th>
-                    <th className="py-3 px-4">Cost</th>
-                    <th className="py-3 px-4">Booked</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                  <tr className="border-b border-[#263449] bg-[#0D1424] text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                    <th className="py-3.5 px-4">Tracking Code</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Destination</th>
+                    <th className="py-3.5 px-4">Weight</th>
+                    <th className="py-3.5 px-4">Cost</th>
+                    <th className="py-3.5 px-4">Booked</th>
+                    <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-normal">
+                <tbody className="divide-y divide-[#263449]/60 font-normal">
                   {shipments.map((shipment) => {
                     const badge = getStatusBadge(shipment.status);
                     return (
                       <tr
                         key={shipment.id || shipment.trackingNumber}
                         data-testid={`shipment-row-${shipment.trackingNumber}`}
-                        className="hover:bg-slate-50/70 transition-colors"
+                        className="hover:bg-[#18243A]/50 transition-colors"
                       >
                         {/* Tracking Number */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-4 px-4 whitespace-nowrap">
                           <Link
                             to={`/track/${shipment.trackingNumber}`}
-                            className="font-mono font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
+                            className="font-mono font-bold text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1"
                           >
                             <span>{shipment.trackingNumber}</span>
                           </Link>
                         </td>
 
                         {/* Status */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
+                        <td className="py-4 px-4 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-bold ${badge.classes}`}
                           >
@@ -331,26 +383,26 @@ export default function CustomerDashboardPage() {
                         </td>
 
                         {/* Destination */}
-                        <td className="py-3.5 px-4 max-w-xs">
-                          <div className="font-semibold text-slate-800">{shipment.recipientName}</div>
-                          <div className="text-[11px] text-slate-500 truncate" title={shipment.recipientAddress}>
+                        <td className="py-4 px-4 max-w-xs">
+                          <div className="font-semibold text-slate-200">{shipment.recipientName}</div>
+                          <div className="text-[11px] text-slate-400 truncate" title={shipment.recipientAddress}>
                             {shipment.recipientAddress}
                           </div>
                         </td>
 
                         {/* Weight */}
-                        <td className="py-3.5 px-4 whitespace-nowrap font-medium text-slate-700">
+                        <td className="py-4 px-4 whitespace-nowrap font-medium text-slate-300">
                           {shipment.weightKg} kg
                         </td>
 
                         {/* Price */}
-                        <td className="py-3.5 px-4 whitespace-nowrap font-semibold text-slate-900">
+                        <td className="py-4 px-4 whitespace-nowrap font-semibold text-[#F8FAFC]">
                           ${Number(shipment.price).toFixed(2)}{' '}
-                          <span className="text-[10px] text-slate-500 font-normal">{shipment.currency}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">{shipment.currency}</span>
                         </td>
 
                         {/* Booked Date */}
-                        <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 text-[11px]">
+                        <td className="py-4 px-4 whitespace-nowrap text-slate-400 text-[11px]">
                           {shipment.createdAt
                             ? new Date(shipment.createdAt).toLocaleDateString(undefined, {
                                 month: 'short',
@@ -361,25 +413,25 @@ export default function CustomerDashboardPage() {
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <td className="py-4 px-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
                             {shipment.status === 'OUT_FOR_DELIVERY' && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenPinModal(shipment)}
                                 data-testid={`view-otp-btn-${shipment.trackingNumber}`}
-                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs transition-colors border border-emerald-200 shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-semibold text-xs transition-colors border border-emerald-500/30 shadow-2xs"
                               >
-                                <Key className="w-3.5 h-3.5 text-emerald-600" />
+                                <Key className="w-3.5 h-3.5 text-emerald-400" />
                                 <span>View Delivery OTP</span>
                               </button>
                             )}
                             <Link
                               to={`/track/${shipment.trackingNumber}`}
                               data-testid={`track-btn-${shipment.trackingNumber}`}
-                              className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs transition-colors border border-indigo-200"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-semibold text-xs transition-colors border border-cyan-500/30"
                             >
-                              <Navigation className="w-3 h-3 text-indigo-600" />
+                              <Navigation className="w-3 h-3 text-cyan-400" />
                               <span>Track Live</span>
                             </Link>
                           </div>
@@ -392,10 +444,10 @@ export default function CustomerDashboardPage() {
             </div>
 
             {/* Pagination Controls */}
-            <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-              <span className="text-slate-500 font-medium" data-testid="pagination-info">
-                Showing page <span className="font-bold text-slate-800">{page + 1}</span> of{' '}
-                <span className="font-bold text-slate-800">{totalPages || 1}</span> ({totalElements} total shipments)
+            <div className="px-4 py-3.5 bg-[#0D1424] border-t border-[#263449] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <span className="text-slate-400 font-medium" data-testid="pagination-info">
+                Showing page <span className="font-bold text-slate-200">{page + 1}</span> of{' '}
+                <span className="font-bold text-slate-200">{totalPages || 1}</span> ({totalElements} total shipments)
               </span>
 
               <div className="flex items-center gap-2">
@@ -405,7 +457,7 @@ export default function CustomerDashboardPage() {
                   disabled={isFirstPage || page === 0}
                   data-testid="pagination-prev"
                   aria-label="Previous Page"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 transition-colors shadow-2xs"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#263449] bg-[#121C2E] hover:bg-[#18243A] disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-300 transition-colors shadow-dark-sm"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                   <span>Previous</span>
@@ -417,7 +469,7 @@ export default function CustomerDashboardPage() {
                   disabled={isLastPage || page >= totalPages - 1}
                   data-testid="pagination-next"
                   aria-label="Next Page"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-slate-700 transition-colors shadow-2xs"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-[#263449] bg-[#121C2E] hover:bg-[#18243A] disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-slate-300 transition-colors shadow-dark-sm"
                 >
                   <span>Next</span>
                   <ChevronRight className="w-3.5 h-3.5" />

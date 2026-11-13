@@ -10,7 +10,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/courier_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD:Siva@1234}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -38,7 +38,7 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   jwt:
-    secret: ${JWT_SECRET:}
+    secret: ${JWT_SECRET:YzQZvIXq1cD5Kz4h4uTTWsPGfEgf8eoefQmyFyQGG9U=}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   pricing:
     base-rate: ${APP_PRICING_BASE_RATE:10.00}

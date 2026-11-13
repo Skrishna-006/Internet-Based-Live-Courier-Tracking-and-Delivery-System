@@ -366,23 +366,23 @@ export default function AdminFleetMapPage() {
   }, [allFleetVehicles, searchFilter, freshnessFilter, currentTime]);
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-navy-950 py-8 px-4 sm:px-6 lg:px-8 text-slate-100">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Top Header & Breadcrumb */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-navy-850 p-6 rounded-2xl border border-navy-700/60 shadow-dark-card">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-              <Link to="/admin/dashboard" className="hover:text-blue-600 transition-colors">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              <Link to="/admin/dashboard" className="hover:text-accent-blue transition-colors">
                 Admin Dispatch
               </Link>
               <ChevronRight className="w-3.5 h-3.5" />
-              <span className="text-blue-600">Live Fleet Map</span>
+              <span className="text-accent-cyan">Live Fleet Map</span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
-              <Truck className="w-6 h-6 text-blue-600" />
+            <h1 className="text-2xl font-bold text-slate-100 tracking-tight flex items-center gap-2.5">
+              <Truck className="w-6 h-6 text-accent-blue" />
               Active Fleet Logistics Map
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Real-time situational telemetry and GPS positions of couriers in transit.
             </p>
           </div>
@@ -392,26 +392,26 @@ export default function AdminFleetMapPage() {
             <div
               className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
                 wsStatus === 'connected'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                   : wsStatus === 'connecting'
-                  ? 'bg-blue-50 text-blue-700 border-blue-200 animate-pulse'
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                  ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 animate-pulse'
+                  : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
               }`}
               data-testid="ws-connection-badge"
             >
               {wsStatus === 'connected' ? (
                 <>
-                  <Wifi className="w-4 h-4 text-emerald-600" />
+                  <Wifi className="w-4 h-4 text-emerald-400" />
                   <span>Live Stream Active</span>
                 </>
               ) : wsStatus === 'connecting' ? (
                 <>
-                  <Activity className="w-4 h-4 text-blue-600 animate-spin" />
+                  <Activity className="w-4 h-4 text-blue-400 animate-spin" />
                   <span>Connecting Stream...</span>
                 </>
               ) : (
                 <>
-                  <WifiOff className="w-4 h-4 text-amber-600" />
+                  <WifiOff className="w-4 h-4 text-amber-400" />
                   <span>Stream Offline</span>
                 </>
               )}
@@ -421,10 +421,10 @@ export default function AdminFleetMapPage() {
             <button
               onClick={loadInitialData}
               disabled={isLoading}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-navy-700 bg-navy-800 hover:bg-navy-700 text-slate-200 text-xs font-semibold transition-colors disabled:opacity-50"
               title="Re-sync initial snapshot"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${isLoading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
           </div>
@@ -433,12 +433,12 @@ export default function AdminFleetMapPage() {
         {/* Operational Metrics Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* 1. Vehicles with Available Locations */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+          <div className="bg-navy-850 p-4 rounded-xl border border-navy-700/60 shadow-dark-card space-y-1">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide block">
               Moving Fleet
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-slate-900" data-testid="metric-total-vehicles">
+              <span className="text-2xl font-bold text-slate-100" data-testid="metric-total-vehicles">
                 {metrics.totalVehicles}
               </span>
               <span className="text-xs text-slate-400">units</span>
@@ -447,42 +447,42 @@ export default function AdminFleetMapPage() {
           </div>
 
           {/* 2. Live / Fresh Coordinates (< 5m) */}
-          <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm space-y-1 bg-gradient-to-b from-white to-emerald-50/20">
-            <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wide block flex items-center gap-1">
-              <Radio className="w-3 h-3 text-emerald-500" />
+          <div className="bg-navy-850 p-4 rounded-xl border border-emerald-500/30 shadow-dark-card space-y-1 bg-gradient-to-b from-navy-850 to-emerald-950/20">
+            <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wide block flex items-center gap-1">
+              <Radio className="w-3 h-3 text-emerald-400" />
               Live Telemetry
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-emerald-700" data-testid="metric-fresh-vehicles">
+              <span className="text-2xl font-bold text-emerald-400" data-testid="metric-fresh-vehicles">
                 {metrics.freshCount}
               </span>
-              <span className="text-xs text-emerald-600">fresh</span>
+              <span className="text-xs text-emerald-500">fresh</span>
             </div>
-            <span className="text-[10px] text-emerald-600 block">Updated &lt; 5m ago</span>
+            <span className="text-[10px] text-emerald-500/80 block">Updated &lt; 5m ago</span>
           </div>
 
           {/* 3. Stale Coordinates (> 5m) */}
-          <div className="bg-white p-4 rounded-xl border border-amber-100 shadow-sm space-y-1 bg-gradient-to-b from-white to-amber-50/20">
-            <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wide block flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3 text-amber-500" />
+          <div className="bg-navy-850 p-4 rounded-xl border border-amber-500/30 shadow-dark-card space-y-1 bg-gradient-to-b from-navy-850 to-amber-950/20">
+            <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wide block flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 text-amber-400" />
               Stale GPS
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-amber-700" data-testid="metric-stale-vehicles">
+              <span className="text-2xl font-bold text-amber-400" data-testid="metric-stale-vehicles">
                 {metrics.staleCount}
               </span>
-              <span className="text-xs text-amber-600">units</span>
+              <span className="text-xs text-amber-500">units</span>
             </div>
-            <span className="text-[10px] text-amber-600 block">No signal &gt; 5m</span>
+            <span className="text-[10px] text-amber-500/80 block">No signal &gt; 5m</span>
           </div>
 
           {/* 4. Total Drivers */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+          <div className="bg-navy-850 p-4 rounded-xl border border-navy-700/60 shadow-dark-card space-y-1">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide block">
               Drivers Total
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-slate-900">
+              <span className="text-2xl font-bold text-slate-100">
                 {metrics.totalAgentsCount}
               </span>
               <span className="text-xs text-slate-400">roster</span>
@@ -491,26 +491,26 @@ export default function AdminFleetMapPage() {
           </div>
 
           {/* 5. Active Driver Accounts */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1">
-            <span className="text-[11px] font-semibold text-blue-700 uppercase tracking-wide block">
+          <div className="bg-navy-850 p-4 rounded-xl border border-navy-700/60 shadow-dark-card space-y-1">
+            <span className="text-[11px] font-semibold text-accent-blue uppercase tracking-wide block">
               Active Accounts
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-blue-700">
+              <span className="text-2xl font-bold text-accent-blue">
                 {metrics.activeAgentsCount}
               </span>
-              <span className="text-xs text-blue-600">enabled</span>
+              <span className="text-xs text-blue-400">enabled</span>
             </div>
-            <span className="text-[10px] text-blue-600 block">System account active</span>
+            <span className="text-[10px] text-slate-500 block">System account active</span>
           </div>
 
           {/* 6. Active Drivers Without Active Shipment Telemetry */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1">
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block">
+          <div className="bg-navy-850 p-4 rounded-xl border border-navy-700/60 shadow-dark-card space-y-1">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide block">
               No Active Location
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-slate-700" data-testid="metric-no-location-agents">
+              <span className="text-2xl font-bold text-slate-300" data-testid="metric-no-location-agents">
                 {metrics.noLocationAgentsCount}
               </span>
               <span className="text-xs text-slate-400">couriers</span>
@@ -522,16 +522,16 @@ export default function AdminFleetMapPage() {
         {/* Error Banner */}
         {error && (
           <div
-            className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 flex items-center justify-between gap-3 text-xs"
+            className="p-4 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 flex items-center justify-between gap-3 text-xs"
             data-testid="fleet-error-banner"
           >
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
               <span>{error}</span>
             </div>
             <button
               onClick={loadInitialData}
-              className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors"
+              className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold transition-colors"
             >
               Retry
             </button>
@@ -544,25 +544,25 @@ export default function AdminFleetMapPage() {
           <div className="lg:col-span-3 space-y-4">
             {isLoading && allFleetVehicles.length === 0 ? (
               <div
-                className="h-[580px] rounded-2xl border border-slate-200 bg-white flex flex-col items-center justify-center p-8 space-y-3"
+                className="h-[580px] rounded-2xl border border-navy-700/60 bg-navy-850 flex flex-col items-center justify-center p-8 space-y-3"
                 data-testid="fleet-loading-skeleton"
               >
-                <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-                <p className="text-sm font-semibold text-slate-700">Loading Fleet Telemetry...</p>
+                <RefreshCw className="w-8 h-8 text-accent-blue animate-spin" />
+                <p className="text-sm font-semibold text-slate-200">Loading Fleet Telemetry...</p>
                 <p className="text-xs text-slate-400">
                   Retrieving GPS coordinates and establishing live STOMP pipeline.
                 </p>
               </div>
             ) : allFleetVehicles.length === 0 ? (
               <div
-                className="h-[580px] rounded-2xl border border-dashed border-slate-300 bg-white flex flex-col items-center justify-center p-8 text-center space-y-3"
+                className="h-[580px] rounded-2xl border border-dashed border-navy-700 bg-navy-850/60 flex flex-col items-center justify-center p-8 text-center space-y-3"
                 data-testid="fleet-empty-state"
               >
-                <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-accent-blue flex items-center justify-center mx-auto border border-blue-500/20">
                   <Truck className="w-7 h-7" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">No Vehicles Currently Transmitting</h3>
-                <p className="text-xs text-slate-500 max-w-sm">
+                <h3 className="text-base font-bold text-slate-100">No Vehicles Currently Transmitting</h3>
+                <p className="text-xs text-slate-400 max-w-sm">
                   There are currently no active deliveries transmitting live GPS coordinates. Vehicles will appear automatically once drivers enter delivery mode.
                 </p>
               </div>
@@ -578,23 +578,23 @@ export default function AdminFleetMapPage() {
           </div>
 
           {/* Vehicle Directory Drawer Column (1 col on large screens) */}
-          <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <Layers className="w-4 h-4 text-blue-600" />
+          <div className="lg:col-span-1 bg-navy-850 rounded-2xl border border-navy-700/60 shadow-dark-card p-4 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-navy-700/60">
+              <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2">
+                <Layers className="w-4 h-4 text-accent-blue" />
                 Active Units ({filteredVehicles.length})
               </h3>
             </div>
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Search waybill or courier..."
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-navy-700 bg-navy-900 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue"
               />
             </div>
 
@@ -604,8 +604,8 @@ export default function AdminFleetMapPage() {
                 onClick={() => setFreshnessFilter('ALL')}
                 className={`px-2.5 py-1 rounded-lg border transition-colors ${
                   freshnessFilter === 'ALL'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    ? 'bg-accent-blue text-white border-accent-blue'
+                    : 'bg-navy-800 text-slate-300 border-navy-700 hover:bg-navy-700'
                 }`}
               >
                 All ({allFleetVehicles.length})
@@ -615,7 +615,7 @@ export default function AdminFleetMapPage() {
                 className={`px-2.5 py-1 rounded-lg border transition-colors ${
                   freshnessFilter === 'LIVE'
                     ? 'bg-emerald-600 text-white border-emerald-600'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    : 'bg-navy-800 text-slate-300 border-navy-700 hover:bg-navy-700'
                 }`}
               >
                 Live ({metrics.freshCount})
@@ -625,7 +625,7 @@ export default function AdminFleetMapPage() {
                 className={`px-2.5 py-1 rounded-lg border transition-colors ${
                   freshnessFilter === 'STALE'
                     ? 'bg-amber-600 text-white border-amber-600'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    : 'bg-navy-800 text-slate-300 border-navy-700 hover:bg-navy-700'
                 }`}
               >
                 Stale ({metrics.staleCount})
@@ -635,7 +635,7 @@ export default function AdminFleetMapPage() {
             {/* Vehicle List */}
             <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
               {filteredVehicles.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-400">
+                <div className="py-6 text-center text-xs text-slate-500">
                   No vehicles match the selected filter.
                 </div>
               ) : (
@@ -649,24 +649,24 @@ export default function AdminFleetMapPage() {
                       onClick={() => setSelectedShipmentId(vehicle.shipmentId)}
                       className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                         isSelected
-                          ? 'border-blue-500 bg-blue-50/50 shadow-sm ring-1 ring-blue-500'
-                          : 'border-slate-100 bg-slate-50/50 hover:bg-slate-100/70'
+                          ? 'border-accent-blue bg-blue-950/30 shadow-sm ring-1 ring-accent-blue'
+                          : 'border-navy-700/50 bg-navy-900/60 hover:bg-navy-800/80'
                       }`}
                     >
-                      <div className="flex items-center justify-between font-semibold text-slate-900 mb-1">
+                      <div className="flex items-center justify-between font-semibold text-slate-200 mb-1">
                         <span className="truncate max-w-[140px]">{vehicle.agentName}</span>
                         {isStale ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-100 text-amber-800">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
                             Stale
                           </span>
                         ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                             Live
                           </span>
                         )}
                       </div>
 
-                      <div className="text-[11px] font-mono text-slate-500 mb-1">
+                      <div className="text-[11px] font-mono text-accent-cyan mb-1">
                         {vehicle.trackingNumber}
                       </div>
 

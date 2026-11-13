@@ -3,7 +3,99 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 font-sans;
+  :root {
+    color-scheme: dark;
   }
+
+  body {
+    @apply bg-[#080D19] text-[#F8FAFC] font-sans antialiased;
+    background-color: #080D19;
+    color: #F8FAFC;
+  }
+
+  /* Custom dark scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0D1424;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #263449;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3B82F6;
+  }
+}
+
+@layer components {
+  /* Dark Design System Card Presets */
+  .dark-card {
+    background-color: #121C2E;
+    border: 1px solid #263449;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark-elevated {
+    background-color: #18243A;
+    border: 1px solid #263449;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.6), 0 4px 10px -2px rgba(0, 0, 0, 0.4);
+  }
+
+  .dark-input {
+    background-color: #0D1424;
+    border: 1px solid #263449;
+    color: #F8FAFC;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease-in-out;
+  }
+  .dark-input::placeholder {
+    color: #64748B;
+  }
+  .dark-input:focus {
+    border-color: #3B82F6;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* Dark-Theme Leaflet Tiles & Controls (Custom filter for high-tech dark navigation) */
+.dark-map-container .leaflet-tile-pane {
+  filter: brightness(0.7) invert(1) contrast(2.4) hue-rotate(200deg) saturate(0.4);
+}
+
+.dark-map-container .leaflet-control-zoom a {
+  background-color: #121C2E !important;
+  color: #F8FAFC !important;
+  border-color: #263449 !important;
+}
+.dark-map-container .leaflet-control-zoom a:hover {
+  background-color: #18243A !important;
+  color: #3B82F6 !important;
+}
+
+.dark-map-container .leaflet-control-attribution {
+  background: rgba(13, 20, 36, 0.8) !important;
+  color: #64748B !important;
+  backdrop-filter: blur(4px);
+}
+.dark-map-container .leaflet-control-attribution a {
+  color: #3B82F6 !important;
+}
+
+/* Leaflet Dark Popup */
+.leaflet-popup-content-wrapper {
+  background-color: #121C2E !important;
+  color: #F8FAFC !important;
+  border: 1px solid #263449 !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.6) !important;
+}
+.leaflet-popup-tip {
+  background-color: #121C2E !important;
+  border: 1px solid #263449 !important;
 }

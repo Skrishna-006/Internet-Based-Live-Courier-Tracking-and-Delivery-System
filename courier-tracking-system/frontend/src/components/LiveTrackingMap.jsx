@@ -296,54 +296,54 @@ export default function LiveTrackingMap({
   return (
     <div
       data-testid="live-tracking-map-container"
-      className={`relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 shadow-sm ${className}`}
+      className={`relative rounded-2xl overflow-hidden border border-navy-700/60 bg-navy-950 dark-map-container shadow-dark-card ${className}`}
       style={{ height }}
     >
       {/* Top Floating Telemetry & Connection Status Bar */}
       <div className="absolute top-3 left-3 right-3 z-[1000] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Connection Mode Pill */}
-        <div className="pointer-events-auto flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-xs font-semibold">
+        <div className="pointer-events-auto flex items-center gap-2 bg-navy-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-navy-700 shadow-dark-card text-xs font-semibold">
           {connectionStatus === 'live' && (
             <>
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
-              <span className="text-emerald-700">Live Telemetry (WebSocket)</span>
+              <span className="text-emerald-400">Live Telemetry (WebSocket)</span>
             </>
           )}
 
           {connectionStatus === 'polling' && (
             <>
-              <RefreshCw className="w-3.5 h-3.5 text-blue-600 animate-spin" />
-              <span className="text-blue-700">Live Polling Active (Fallback)</span>
+              <RefreshCw className="w-3.5 h-3.5 text-accent-blue animate-spin" />
+              <span className="text-accent-blue">Live Polling Active (Fallback)</span>
             </>
           )}
 
           {connectionStatus === 'reconnecting' && (
             <>
-              <Radio className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-              <span className="text-amber-700">Reconnecting...</span>
+              <Radio className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+              <span className="text-amber-400">Reconnecting...</span>
             </>
           )}
 
           {connectionStatus === 'offline' && (
             <>
-              <span className="h-2 w-2 rounded-full bg-slate-400"></span>
-              <span className="text-slate-600">Telemetry Inactive</span>
+              <span className="h-2 w-2 rounded-full bg-slate-500"></span>
+              <span className="text-slate-400">Telemetry Inactive</span>
             </>
           )}
         </div>
 
         {/* Freshness / Last Update Pill */}
-        <div className="pointer-events-auto bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full border border-slate-200 shadow-sm text-xs text-slate-600 font-medium flex items-center gap-2">
+        <div className="pointer-events-auto bg-navy-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-navy-700 shadow-dark-card text-xs text-slate-300 font-medium flex items-center gap-2">
           {location?.fresh === false ? (
-            <span className="text-amber-600 inline-flex items-center gap-1 font-semibold">
+            <span className="text-amber-400 inline-flex items-center gap-1 font-semibold">
               <AlertTriangle className="w-3.5 h-3.5" /> Stale Signal
             </span>
           ) : (
             <span className="inline-flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               Updated: {formatTimestamp(lastUpdatedAt || location?.recordedAt)}
             </span>
           )}
@@ -371,7 +371,7 @@ export default function LiveTrackingMap({
             <Polyline
               data-testid="route-polyline"
               positions={routeCoords}
-              pathOptions={{ color: '#4f46e5', weight: 4, opacity: 0.7, dashArray: null }}
+              pathOptions={{ color: '#38bdf8', weight: 4, opacity: 0.8, dashArray: null }}
             />
           )}
 
@@ -379,7 +379,7 @@ export default function LiveTrackingMap({
           <Marker position={displayVehiclePos} icon={vehicleIcon}>
             <Popup className="custom-popup">
               <div className="p-1 space-y-1 text-xs">
-                <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5">
                   <Truck className="w-3.5 h-3.5 text-blue-600" />
                   Courier Vehicle
                 </div>
@@ -405,7 +405,7 @@ export default function LiveTrackingMap({
             <Marker position={destinationPosition} icon={destIcon}>
               <Popup>
                 <div className="p-1 text-xs">
-                  <span className="font-bold text-slate-800 block">
+                  <span className="font-bold text-slate-900 block">
                     {destination.label || 'Delivery Destination'}
                   </span>
                 </div>
@@ -417,22 +417,22 @@ export default function LiveTrackingMap({
         /* Informational Card When GPS Coordinates are Not Yet Available or Inactive */
         <div
           data-testid="no-location-notice"
-          className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-slate-50 border border-slate-200"
+          className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-navy-850 border border-navy-700/60"
         >
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 border border-blue-100 shadow-sm">
-            <Navigation className="w-7 h-7 text-blue-500" />
+          <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-accent-blue flex items-center justify-center mb-3 border border-blue-500/20 shadow-sm">
+            <Navigation className="w-7 h-7 text-accent-blue" />
           </div>
-          <h3 className="text-base font-bold text-slate-800 mb-1">
+          <h3 className="text-base font-bold text-slate-100 mb-1">
             Live Vehicle Location Not Available
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mb-4 leading-relaxed">
+          <p className="text-xs text-slate-400 max-w-sm mb-4 leading-relaxed">
             {location?.status === 'OUT_FOR_DELIVERY'
               ? 'Consignment is out for delivery. Waiting for the delivery agent GPS telemetry pulse.'
               : 'Live vehicle telemetry is activated strictly when the consignment status is OUT FOR DELIVERY.'}
           </p>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-200/70 text-slate-700 text-[11px] font-medium">
-            <Radio className="w-3 h-3 text-slate-500 animate-pulse" />
-            Consignment Status: <span className="font-semibold">{location?.status || 'PENDING'}</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-navy-800 border border-navy-700 text-slate-300 text-[11px] font-medium">
+            <Radio className="w-3 h-3 text-accent-cyan animate-pulse" />
+            Consignment Status: <span className="font-semibold text-accent-blue">{location?.status || 'PENDING'}</span>
           </div>
         </div>
       )}
@@ -441,7 +441,7 @@ export default function LiveTrackingMap({
       {hasVehicleCoords && location?.fresh === false && (
         <div
           data-testid="stale-location-alert"
-          className="absolute bottom-3 left-3 right-3 z-[1000] bg-amber-500/95 text-white backdrop-blur-sm px-4 py-2 rounded-xl shadow-md text-xs font-medium flex items-center justify-between"
+          className="absolute bottom-3 left-3 right-3 z-[1000] bg-amber-600/95 text-white backdrop-blur-sm px-4 py-2 rounded-xl shadow-dark-card border border-amber-500 text-xs font-medium flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 text-white" />

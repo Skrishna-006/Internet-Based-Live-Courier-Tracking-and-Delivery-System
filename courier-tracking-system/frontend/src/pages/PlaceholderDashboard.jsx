@@ -20,19 +20,19 @@ export default function PlaceholderDashboard({ portalType, title, description, p
   const getBadgeColor = () => {
     switch (portalType) {
       case 'driver':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
       case 'admin':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-purple-500/10 text-purple-400 border-purple-500/30';
       default:
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-blue-500/10 text-accent-cyan border-blue-500/30';
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4 space-y-6">
-      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-6">
-        <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
-          <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
+    <div className="max-w-3xl mx-auto py-12 px-4 space-y-6 text-slate-100">
+      <div className="bg-navy-850 rounded-3xl border border-navy-700/60 p-8 shadow-dark-card space-y-6">
+        <div className="flex items-center gap-4 border-b border-navy-700/60 pb-6">
+          <div className="w-14 h-14 rounded-2xl bg-navy-900 border border-navy-700/60 flex items-center justify-center shrink-0">
             {getIcon()}
           </div>
           <div>
@@ -42,21 +42,21 @@ export default function PlaceholderDashboard({ portalType, title, description, p
               </span>
               <span className="text-xs text-slate-400 font-mono">ID #{user?.id || '—'}</span>
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">{title}</h1>
+            <h1 className="text-2xl font-black text-slate-100 tracking-tight">{title}</h1>
           </div>
         </div>
 
         <div className="space-y-4">
-          <p className="text-sm text-slate-600 leading-relaxed">{description}</p>
+          <p className="text-sm text-slate-300 leading-relaxed">{description}</p>
 
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          <div className="p-4 bg-navy-900/80 rounded-2xl border border-navy-700/60 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               Role Authorization Verified: {user?.role}
             </div>
-            <p className="text-xs text-slate-500">
-              Authenticated user: <span className="font-semibold text-slate-700">{user?.fullName}</span> ({user?.email}).
-              Full interactive dashboard components are scheduled in <span className="font-semibold text-indigo-600">{plannedFeature}</span>.
+            <p className="text-xs text-slate-400">
+              Authenticated user: <span className="font-semibold text-slate-200">{user?.fullName}</span> ({user?.email}).
+              Full interactive dashboard components are scheduled in <span className="font-semibold text-accent-cyan">{plannedFeature}</span>.
             </p>
           </div>
 
@@ -64,7 +64,7 @@ export default function PlaceholderDashboard({ portalType, title, description, p
             {portalType === 'admin' && (
               <Link
                 to="/admin/fleet"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent-blue hover:bg-blue-600 text-white text-xs font-semibold shadow-sm transition-colors"
                 data-testid="admin-open-fleet-map-btn"
               >
                 <Truck className="w-3.5 h-3.5" />
@@ -73,7 +73,7 @@ export default function PlaceholderDashboard({ portalType, title, description, p
             )}
             <Link
               to="/track"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-cyan hover:text-cyan-300"
             >
               <LinkIcon className="w-3.5 h-3.5" />
               Test Live Tracking Map

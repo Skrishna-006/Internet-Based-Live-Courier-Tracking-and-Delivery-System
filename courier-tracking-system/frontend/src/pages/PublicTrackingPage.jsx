@@ -45,17 +45,17 @@ export default function PublicTrackingPage() {
   const getStatusBadgeStyle = (status) => {
     switch (status) {
       case 'DELIVERED':
-        return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40';
       case 'OUT_FOR_DELIVERY':
-        return 'bg-blue-100 text-blue-800 border-blue-300 animate-pulse';
+        return 'bg-blue-500/20 text-blue-400 border-blue-500/40 animate-pulse';
       case 'IN_TRANSIT':
       case 'PICKED_UP':
-        return 'bg-indigo-100 text-indigo-800 border-indigo-300';
+        return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40';
       case 'CANCELLED':
       case 'RETURNED':
-        return 'bg-rose-100 text-rose-800 border-rose-300';
+        return 'bg-rose-500/20 text-rose-400 border-rose-500/40';
       default:
-        return 'bg-slate-100 text-slate-800 border-slate-300';
+        return 'bg-slate-800 text-slate-300 border-navy-700';
     }
   };
 
@@ -73,18 +73,18 @@ export default function PublicTrackingPage() {
   };
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="space-y-8 pb-16 text-slate-100">
       {/* Search Header Banner */}
-      <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl">
+      <section className="bg-gradient-to-r from-navy-950 via-navy-900 to-navy-950 rounded-3xl p-6 sm:p-10 text-white shadow-dark-card border border-navy-700/70">
         <div className="max-w-3xl mx-auto space-y-4 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold uppercase tracking-wider">
-            <Truck className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-accent-blue text-xs font-semibold uppercase tracking-wider">
+            <Truck className="w-3.5 h-3.5 text-accent-blue" />
             Live Shipment Telemetry & Tracking
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-100">
             Track Your Delivery in Real Time
           </h1>
-          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto">
+          <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto">
             View live GPS movements, delivery milestones, and instant status updates with zero PII exposure.
           </p>
 
@@ -97,11 +97,11 @@ export default function PublicTrackingPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Enter Tracking Number (e.g. TRK-20261026-ABCD)"
-                className="w-full pl-12 pr-28 py-3.5 rounded-2xl bg-white text-slate-900 placeholder-slate-400 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-md"
+                className="w-full pl-12 pr-28 py-3.5 rounded-2xl bg-navy-850 border border-navy-700 text-slate-100 placeholder-slate-500 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/30 focus:border-accent-blue shadow-md"
               />
               <button
                 type="submit"
-                className="absolute right-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shadow-sm"
+                className="absolute right-2 px-5 py-2.5 rounded-xl bg-accent-blue hover:bg-blue-600 text-white text-xs font-bold transition-colors shadow-sm"
               >
                 Track
               </button>
@@ -113,35 +113,35 @@ export default function PublicTrackingPage() {
       {/* Main Content Area */}
       {!activeTrackingNumber ? (
         /* Empty State Prompting User to Search */
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+        <div className="bg-navy-850 rounded-2xl border border-navy-700/60 p-12 text-center max-w-md mx-auto space-y-4 shadow-dark-card">
+          <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-accent-blue flex items-center justify-center mx-auto border border-blue-500/20">
             <Package className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-bold text-slate-800">Ready to Track</h2>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <h2 className="text-xl font-bold text-slate-100">Ready to Track</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
             Enter a consignment tracking number above to follow vehicle GPS coordinates, milestone logs, and delivery progress.
           </p>
         </div>
       ) : isLoading ? (
         /* Loading Skeleton */
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
-          <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
-          <p className="text-sm font-medium text-slate-600">
+          <RefreshCw className="w-8 h-8 text-accent-blue animate-spin" />
+          <p className="text-sm font-medium text-slate-300">
             Querying tracking records and initializing telemetry channel...
           </p>
         </div>
       ) : error ? (
         /* Error State */
-        <div className="bg-white rounded-2xl border border-rose-200 p-8 text-center max-w-lg mx-auto space-y-4 shadow-sm">
-          <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100">
+        <div className="bg-navy-850 rounded-2xl border border-rose-500/40 p-8 text-center max-w-lg mx-auto space-y-4 shadow-dark-card">
+          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/20">
             <AlertCircle className="w-7 h-7" />
           </div>
-          <h2 className="text-lg font-bold text-slate-800">Shipment Not Found</h2>
-          <p className="text-xs text-slate-600 leading-relaxed">{error}</p>
+          <h2 className="text-lg font-bold text-slate-100">Shipment Not Found</h2>
+          <p className="text-xs text-slate-300 leading-relaxed">{error}</p>
           <div className="pt-2">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent-cyan hover:text-cyan-300"
             >
               Return to Home <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -151,14 +151,14 @@ export default function PublicTrackingPage() {
         /* Loaded Shipment Details & Live Map */
         <div className="space-y-6">
           {/* Tracking Summary Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+          <div className="bg-navy-850 rounded-2xl border border-navy-700/60 shadow-dark-card p-6 sm:p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-navy-700/60 pb-6">
               <div>
                 <span className="text-xs uppercase tracking-wider font-semibold text-slate-400 block mb-1">
                   Tracking Number
                 </span>
                 <div className="flex items-center gap-3">
-                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-mono">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight font-mono">
                     {shipment?.trackingNumber || activeTrackingNumber}
                   </h2>
                   <span
@@ -174,9 +174,9 @@ export default function PublicTrackingPage() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={refresh}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-navy-800 hover:bg-navy-700 text-slate-200 border border-navy-700 transition-colors"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
                   Refresh
                 </button>
               </div>
@@ -184,31 +184,31 @@ export default function PublicTrackingPage() {
 
             {/* Estimated Dates & Metadata */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex items-start gap-3">
-                <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+              <div className="bg-navy-900/70 p-3.5 rounded-xl border border-navy-700/60 flex items-start gap-3">
+                <Clock className="w-4 h-4 text-accent-blue shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-slate-500 font-medium block">Estimated Delivery</span>
-                  <span className="font-semibold text-slate-800">
+                  <span className="text-slate-400 font-medium block">Estimated Delivery</span>
+                  <span className="font-semibold text-slate-200">
                     {formatDateTime(shipment?.estimatedDeliveryAt)}
                   </span>
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex items-start gap-3">
-                <CheckCircle2 className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+              <div className="bg-navy-900/70 p-3.5 rounded-xl border border-navy-700/60 flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-slate-500 font-medium block">Actual Delivery</span>
-                  <span className="font-semibold text-slate-800">
+                  <span className="text-slate-400 font-medium block">Actual Delivery</span>
+                  <span className="font-semibold text-slate-200">
                     {formatDateTime(shipment?.actualDeliveryAt)}
                   </span>
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 flex items-start gap-3">
-                <Calendar className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+              <div className="bg-navy-900/70 p-3.5 rounded-xl border border-navy-700/60 flex items-start gap-3">
+                <Calendar className="w-4 h-4 text-accent-cyan shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-slate-500 font-medium block">Booked On</span>
-                  <span className="font-semibold text-slate-800">
+                  <span className="text-slate-400 font-medium block">Booked On</span>
+                  <span className="font-semibold text-slate-200">
                     {formatDateTime(shipment?.createdAt)}
                   </span>
                 </div>
@@ -220,10 +220,10 @@ export default function PublicTrackingPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-lg font-bold text-slate-900">Live Delivery Route & Map</h3>
+                <MapPin className="w-5 h-5 text-accent-blue" />
+                <h3 className="text-lg font-bold text-slate-100">Live Delivery Route & Map</h3>
               </div>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-400">
                 OpenStreetMap & GPS Telemetry
               </span>
             </div>
@@ -239,32 +239,32 @@ export default function PublicTrackingPage() {
           </div>
 
           {/* Shipment Milestone Journey Timeline */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+          <div className="bg-navy-850 rounded-2xl border border-navy-700/60 shadow-dark-card p-6 sm:p-8 space-y-6">
+            <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-accent-blue" />
               Consignment Journey Milestones
             </h3>
 
             {shipment?.milestones && shipment.milestones.length > 0 ? (
-              <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+              <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-navy-700">
                 {shipment.milestones.map((milestone, idx) => (
                   <div key={idx} className="relative flex items-start gap-4">
-                    <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-white border-2 border-indigo-600 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-indigo-600"></div>
+                    <div className="absolute -left-6 top-1 w-5 h-5 rounded-full bg-navy-850 border-2 border-accent-blue flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-accent-blue"></div>
                     </div>
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-sm text-slate-800">
+                        <span className="font-bold text-sm text-slate-200">
                           {milestone.status?.replace(/_/g, ' ')}
                         </span>
                         {(milestone.location || milestone.locationName) && (
-                          <span className="text-xs px-2 py-0.5 bg-slate-100 rounded-md text-slate-600 font-medium">
+                          <span className="text-xs px-2 py-0.5 bg-navy-800 border border-navy-700 rounded-md text-accent-cyan font-medium">
                             {milestone.location || milestone.locationName}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-600">{milestone.description || milestone.remarks}</p>
-                      <span className="text-[11px] text-slate-400 block">
+                      <p className="text-xs text-slate-400">{milestone.description || milestone.remarks}</p>
+                      <span className="text-[11px] text-slate-500 block">
                         {formatDateTime(milestone.timestamp)}
                       </span>
                     </div>
@@ -272,18 +272,18 @@ export default function PublicTrackingPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6 text-xs text-slate-500">
+              <div className="text-center py-6 text-xs text-slate-400">
                 No milestone events recorded yet.
               </div>
             )}
           </div>
 
           {/* Privacy & Safeguard Notice */}
-          <div className="bg-indigo-50/60 rounded-2xl border border-indigo-100 p-4 flex items-center gap-3 text-xs text-indigo-900">
-            <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0" />
+          <div className="bg-navy-900/80 rounded-2xl border border-navy-700/70 p-4 flex items-center gap-3 text-xs text-slate-300">
+            <ShieldCheck className="w-5 h-5 text-accent-blue shrink-0" />
             <div>
-              <span className="font-semibold block">Privacy & Security Shield Active</span>
-              <span className="text-indigo-700/80">
+              <span className="font-semibold block text-slate-200">Privacy & Security Shield Active</span>
+              <span className="text-slate-400">
                 Sender, recipient phone numbers, billing keys, and courier personal identity details are completely shielded.
               </span>
             </div>

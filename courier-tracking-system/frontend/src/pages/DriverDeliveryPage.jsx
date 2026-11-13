@@ -375,9 +375,9 @@ export default function DriverDeliveryPage() {
   if (loadingShipment) {
     return (
       <div className="p-16 text-center" data-testid="delivery-page-loading">
-        <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-3" />
-        <p className="text-sm font-semibold text-slate-700">Loading delivery run...</p>
-        <p className="text-xs text-slate-500 mt-1">Connecting to driver navigation and telemetry hub.</p>
+        <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-3" />
+        <p className="text-sm font-semibold text-slate-200">Loading delivery run...</p>
+        <p className="text-xs text-slate-400 mt-1">Connecting to driver navigation and telemetry hub.</p>
       </div>
     );
   }
@@ -387,20 +387,20 @@ export default function DriverDeliveryPage() {
       <div className="max-w-2xl mx-auto space-y-4" data-testid="delivery-page-error">
         <Link
           to="/driver/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Assigned Queue</span>
         </Link>
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-rose-800 shadow-sm">
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6 text-rose-300 shadow-dark-card">
           <div className="flex items-center gap-2 mb-2 font-bold text-sm">
-            <AlertCircle className="w-5 h-5 text-rose-600" />
+            <AlertCircle className="w-5 h-5 text-rose-400" />
             <span>Unable to Access Delivery Run</span>
           </div>
-          <p className="text-xs text-rose-700 mb-4">{shipmentError}</p>
+          <p className="text-xs text-rose-300/80 mb-4">{shipmentError}</p>
           <button
             onClick={fetchShipment}
-            className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors shadow-sm"
+            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors shadow-sm"
           >
             Retry Connection
           </button>
@@ -412,40 +412,40 @@ export default function DriverDeliveryPage() {
   return (
     <div className="space-y-6" data-testid="driver-delivery-container">
       {/* Navigation & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#263449]">
         <div>
           <Link
             to="/driver/dashboard"
             data-testid="back-to-queue-link"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors mb-2"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Driver Portal</span>
           </Link>
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight" data-testid="delivery-mode-title">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] tracking-tight" data-testid="delivery-mode-title">
               Active Delivery Run Mode
             </h1>
-            <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+            <span className="font-mono text-xs font-bold text-cyan-400 bg-[#0D1424] px-2.5 py-1 rounded-lg border border-[#263449]">
               {shipment.trackingNumber}
             </span>
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
                 shipment.status === 'DELIVERED'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                   : shipment.status === 'OUT_FOR_DELIVERY'
-                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                  ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                  : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
               }`}
               data-testid="shipment-status-badge"
             >
               <span
                 className={`w-2 h-2 rounded-full ${
                   shipment.status === 'DELIVERED'
-                    ? 'bg-emerald-500'
+                    ? 'bg-emerald-400'
                     : shipment.status === 'OUT_FOR_DELIVERY'
-                    ? 'bg-indigo-500 animate-pulse'
-                    : 'bg-amber-500'
+                    ? 'bg-blue-400 animate-pulse'
+                    : 'bg-amber-400'
                 }`}
               />
               {shipment.status.replace(/_/g, ' ')}
@@ -459,9 +459,9 @@ export default function DriverDeliveryPage() {
             to={`/track/${shipment.trackingNumber}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-sm transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#121C2E] border border-[#263449] text-cyan-400 hover:text-white hover:bg-[#18243A] text-xs font-semibold shadow-dark-sm transition-colors"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
             <span>Open Public Tracking</span>
           </Link>
         </div>
@@ -471,13 +471,13 @@ export default function DriverDeliveryPage() {
       {shipment.status !== 'OUT_FOR_DELIVERY' && shipment.status !== 'DELIVERED' && (
         <div
           data-testid="status-guidance-banner"
-          className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-amber-900 shadow-sm"
+          className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-amber-300 shadow-dark-card"
         >
           <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div className="text-xs">
-              <p className="font-bold text-sm text-amber-950">Shipment Status: {shipment.status.replace(/_/g, ' ')}</p>
-              <p className="text-amber-800 mt-0.5">
+              <p className="font-bold text-sm text-amber-200">Shipment Status: {shipment.status.replace(/_/g, ' ')}</p>
+              <p className="text-amber-300/80 mt-0.5">
                 Live GPS telemetry transmission and OTP delivery confirmation are active only when the parcel is Out for Delivery.
               </p>
             </div>
@@ -486,7 +486,7 @@ export default function DriverDeliveryPage() {
             onClick={handleStartDeliveryRun}
             disabled={progressingStatus}
             data-testid="start-delivery-run-btn"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition-colors shrink-0 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-dark-sm transition-colors shrink-0 disabled:opacity-50"
           >
             {progressingStatus && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
             <span>Start Delivery Run (Set Out for Delivery)</span>
@@ -498,24 +498,24 @@ export default function DriverDeliveryPage() {
       {isDelivered && (
         <div
           data-testid="delivery-confirmed-card"
-          className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 shadow-sm animate-in fade-in zoom-in-95 duration-200"
+          className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 shadow-dark-card animate-in fade-in zoom-in-95 duration-200"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-inner">
-                <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
+                <CheckCircle2 className="w-7 h-7 text-emerald-400" />
               </div>
               <div>
-                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
                   Proof of Delivery Recorded
                 </span>
-                <h3 className="text-lg font-bold text-emerald-950">Parcel Successfully Delivered!</h3>
-                <p className="text-xs text-emerald-800 mt-0.5">
-                  Handover confirmed to <strong className="font-semibold">{deliveryProof?.recipientName || shipment.recipientName}</strong> via electronic OTP.
+                <h3 className="text-lg font-bold text-[#F8FAFC]">Parcel Successfully Delivered!</h3>
+                <p className="text-xs text-emerald-300/90 mt-0.5">
+                  Handover confirmed to <strong className="font-semibold text-white">{deliveryProof?.recipientName || shipment.recipientName}</strong> via electronic OTP.
                 </p>
               </div>
             </div>
-            <div className="text-left sm:text-right text-xs text-emerald-700 font-mono">
+            <div className="text-left sm:text-right text-xs text-emerald-400 font-mono">
               {deliveryProof?.deliveryProofId && (
                 <div>Proof ID: #{deliveryProof.deliveryProofId}</div>
               )}
@@ -524,7 +524,7 @@ export default function DriverDeliveryPage() {
               )}
               <Link
                 to="/driver/dashboard"
-                className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-900 underline"
+                className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 underline"
               >
                 Return to Active Queue
               </Link>
@@ -538,14 +538,14 @@ export default function DriverDeliveryPage() {
         {/* Left Column: Live GPS Transmission & Interactive Map (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
           {/* GPS Telemetry Control Panel */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="bg-[#121C2E] border border-[#263449] rounded-2xl p-5 shadow-dark-card space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#263449] pb-4">
               <div>
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <Radio className={`w-4 h-4 ${isTracking ? 'text-emerald-500 animate-pulse' : 'text-slate-400'}`} />
+                <h2 className="text-base font-bold text-[#F8FAFC] flex items-center gap-2">
+                  <Radio className={`w-4 h-4 ${isTracking ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
                   <span>Live GPS Telemetry Broadcasting</span>
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5">
                   Stream genuine browser GPS coordinates to the customer live tracking map.
                 </p>
               </div>
@@ -556,7 +556,7 @@ export default function DriverDeliveryPage() {
                   <button
                     onClick={stopLiveTracking}
                     data-testid="stop-tracking-btn"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-dark-sm transition-all"
                   >
                     <Square className="w-3.5 h-3.5 fill-current" />
                     <span>Stop Live Tracking</span>
@@ -566,7 +566,7 @@ export default function DriverDeliveryPage() {
                     onClick={startLiveTracking}
                     disabled={isDelivered}
                     data-testid="start-tracking-btn"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-dark-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>Start Live Tracking</span>
@@ -579,13 +579,13 @@ export default function DriverDeliveryPage() {
             {gpsError && (
               <div
                 data-testid="gps-error-alert"
-                className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5 shadow-sm"
+                className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 shadow-dark-sm"
               >
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="font-semibold">{gpsError}</p>
                   {gpsPermission === 'denied' && (
-                    <p className="text-[11px] text-rose-600 mt-1">
+                    <p className="text-[11px] text-rose-400/90 mt-1">
                       To re-enable: Click the lock/tune icon in your browser URL bar, allow Location access, and click Start Live Tracking again.
                     </p>
                   )}
@@ -596,16 +596,16 @@ export default function DriverDeliveryPage() {
             {/* Telemetry Status Strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs" data-testid="telemetry-status-grid">
               {/* Permission Indicator */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+              <div className="bg-[#0D1424] p-2.5 rounded-xl border border-[#263449]">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Permission</span>
                 <span
                   data-testid="gps-permission-status"
                   className={`font-bold capitalize ${
                     gpsPermission === 'granted'
-                      ? 'text-emerald-700'
+                      ? 'text-emerald-400'
                       : gpsPermission === 'denied'
-                      ? 'text-rose-700'
-                      : 'text-slate-600'
+                      ? 'text-rose-400'
+                      : 'text-slate-400'
                   }`}
                 >
                   {gpsPermission}
@@ -613,12 +613,12 @@ export default function DriverDeliveryPage() {
               </div>
 
               {/* Broadcast Status Indicator */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+              <div className="bg-[#0D1424] p-2.5 rounded-xl border border-[#263449]">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Broadcast</span>
                 <span
                   data-testid="gps-broadcast-status"
                   className={`font-bold ${
-                    isTracking ? 'text-emerald-700' : 'text-slate-500'
+                    isTracking ? 'text-emerald-400' : 'text-slate-400'
                   }`}
                 >
                   {isTracking ? 'Active' : 'Stopped'}
@@ -626,20 +626,20 @@ export default function DriverDeliveryPage() {
               </div>
 
               {/* Transmission State Indicator */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+              <div className="bg-[#0D1424] p-2.5 rounded-xl border border-[#263449]">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Server Sync</span>
                 <span
                   data-testid="transmission-status-indicator"
                   className={`font-bold capitalize ${
                     transmissionStatus === 'synced'
-                      ? 'text-teal-700'
+                      ? 'text-teal-400'
                       : transmissionStatus === 'transmitting'
-                      ? 'text-blue-700'
+                      ? 'text-blue-400'
                       : transmissionStatus === 'throttled'
-                      ? 'text-amber-700'
+                      ? 'text-amber-400'
                       : transmissionStatus === 'error'
-                      ? 'text-rose-700'
-                      : 'text-slate-500'
+                      ? 'text-rose-400'
+                      : 'text-slate-400'
                   }`}
                 >
                   {transmissionStatus === 'throttled' ? 'Throttled (5s)' : transmissionStatus}
@@ -647,14 +647,14 @@ export default function DriverDeliveryPage() {
               </div>
 
               {/* Accuracy Indicator */}
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+              <div className="bg-[#0D1424] p-2.5 rounded-xl border border-[#263449]">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Accuracy</span>
                 <span
                   data-testid="gps-accuracy-indicator"
                   className={`font-bold ${
                     currentCoords?.accuracy && currentCoords.accuracy <= 30
-                      ? 'text-emerald-700'
-                      : 'text-slate-700'
+                      ? 'text-emerald-400'
+                      : 'text-slate-300'
                   }`}
                 >
                   {currentCoords?.accuracy ? `±${currentCoords.accuracy}m` : 'Awaiting lock'}
@@ -666,24 +666,24 @@ export default function DriverDeliveryPage() {
             {currentCoords && (
               <div
                 data-testid="current-coords-display"
-                className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 text-xs flex flex-wrap items-center justify-between gap-3 text-slate-700"
+                className="bg-[#0D1424] border border-[#263449] rounded-xl p-3 text-xs flex flex-wrap items-center justify-between gap-3 text-slate-300"
               >
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-indigo-700 block">Coordinates</span>
-                  <span className="font-mono font-bold text-slate-900">
+                  <span className="text-[10px] uppercase font-bold text-cyan-400 block">Coordinates</span>
+                  <span className="font-mono font-bold text-white">
                     {currentCoords.latitude}, {currentCoords.longitude}
                   </span>
                 </div>
                 {currentCoords.speed != null && (
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-indigo-700 block">Speed</span>
-                    <span className="font-bold text-slate-800">{currentCoords.speed} km/h</span>
+                    <span className="text-[10px] uppercase font-bold text-cyan-400 block">Speed</span>
+                    <span className="font-bold text-slate-200">{currentCoords.speed} km/h</span>
                   </div>
                 )}
                 {lastSentLocation?.recordedAt && (
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-indigo-700 block">Last Synced</span>
-                    <span className="font-mono text-slate-800 text-[11px]" data-testid="last-synced-time">
+                    <span className="text-[10px] uppercase font-bold text-cyan-400 block">Last Synced</span>
+                    <span className="font-mono text-slate-200 text-[11px]" data-testid="last-synced-time">
                       {new Date(lastSentLocation.recordedAt).toLocaleTimeString()}
                     </span>
                   </div>
@@ -692,8 +692,8 @@ export default function DriverDeliveryPage() {
             )}
 
             {/* Mobile Browser Background Limitation Disclaimer */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60 text-[11px] text-slate-500 flex items-start gap-2">
-              <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+            <div className="p-3 bg-[#0D1424] rounded-xl border border-[#263449] text-[11px] text-slate-400 flex items-start gap-2">
+              <Info className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
               <span>
                 <strong>Browser Geolocation Notice:</strong> Browser location streaming requires this tab to remain open and active. Continuous background GPS cannot be guaranteed if the browser is backgrounded or your device goes to sleep.
               </span>
@@ -701,69 +701,71 @@ export default function DriverDeliveryPage() {
           </div>
 
           {/* Real-time Map Preview */}
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="border-b border-slate-200 p-4 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-indigo-600" />
+          <div className="bg-[#121C2E] border border-[#263449] rounded-2xl overflow-hidden shadow-dark-card">
+            <div className="border-b border-[#263449] p-4 bg-[#0D1424] flex items-center justify-between">
+              <h3 className="font-bold text-[#F8FAFC] text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-cyan-400" />
                 <span>Live Route Map</span>
               </h3>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-400">
                 Destination: {shipment.recipientAddress}
               </span>
             </div>
-            <LiveTrackingMap
-              trackingNumber={shipment.trackingNumber}
-              location={
-                currentCoords
-                  ? {
-                      latitude: currentCoords.latitude,
-                      longitude: currentCoords.longitude,
-                      recordedAt: currentCoords.timestamp,
-                      status: shipment.status,
-                      fresh: true,
-                      speed: currentCoords.speed,
-                      bearing: currentCoords.bearing,
-                    }
-                  : null
-              }
-              connectionStatus={isTracking ? 'live' : 'offline'}
-              height="380px"
-            />
+            <div className="dark-map-container">
+              <LiveTrackingMap
+                trackingNumber={shipment.trackingNumber}
+                location={
+                  currentCoords
+                    ? {
+                        latitude: currentCoords.latitude,
+                        longitude: currentCoords.longitude,
+                        recordedAt: currentCoords.timestamp,
+                        status: shipment.status,
+                        fresh: true,
+                        speed: currentCoords.speed,
+                        bearing: currentCoords.bearing,
+                      }
+                    : null
+                }
+                connectionStatus={isTracking ? 'live' : 'offline'}
+                height="380px"
+              />
+            </div>
           </div>
         </div>
 
         {/* Right Column: Consignment Details & OTP Verification (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Recipient Handover Details Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <div className="bg-[#121C2E] border border-[#263449] rounded-2xl p-5 shadow-dark-card space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Recipient & Consignment
             </h3>
 
             <div className="space-y-2 text-xs">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-slate-900 text-sm">
+              <div className="bg-[#0D1424] p-3 rounded-xl border border-[#263449] space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-[#F8FAFC] text-sm">
                   <User className="w-4 h-4 text-slate-400" />
                   <span data-testid="recipient-name-info">{shipment.recipientName}</span>
                 </div>
-                <div className="text-slate-600 flex items-start gap-1.5">
-                  <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                <div className="text-slate-300 flex items-start gap-1.5">
+                  <MapPin className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <span data-testid="recipient-address-info">{shipment.recipientAddress}</span>
                 </div>
                 {shipment.recipientPhone && (
-                  <div className="text-slate-600 flex items-center gap-1.5 font-mono">
+                  <div className="text-slate-400 flex items-center gap-1.5 font-mono">
                     <Phone className="w-3.5 h-3.5 text-slate-400" />
                     <span>{shipment.recipientPhone}</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
-                <span>Weight: <strong className="text-slate-700">{shipment.weightKg} kg</strong></span>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                <span>Weight: <strong className="text-slate-200">{shipment.weightKg} kg</strong></span>
                 {shipment.estimatedPrice && (
-                  <span>Fee: <strong className="text-slate-700">${Number(shipment.estimatedPrice).toFixed(2)}</strong></span>
+                  <span>Fee: <strong className="text-slate-200">${Number(shipment.estimatedPrice).toFixed(2)}</strong></span>
                 )}
-                <span>Origin: <strong className="text-slate-700">{shipment.originAddress || 'Central Depot'}</strong></span>
+                <span>Origin: <strong className="text-slate-200">{shipment.originAddress || 'Central Depot'}</strong></span>
               </div>
             </div>
           </div>
@@ -771,19 +773,19 @@ export default function DriverDeliveryPage() {
           {/* Electronic OTP Delivery Confirmation Handover Section */}
           <div
             data-testid="otp-confirmation-section"
-            className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4"
+            className="bg-[#121C2E] border border-[#263449] rounded-2xl p-5 shadow-dark-card space-y-4"
           >
-            <div className="border-b border-slate-100 pb-3">
+            <div className="border-b border-[#263449] pb-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                  <KeyRound className="w-4 h-4 text-indigo-600" />
+                <h3 className="font-bold text-[#F8FAFC] text-sm flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-cyan-400" />
                   <span>Electronic Proof of Delivery</span>
                 </h3>
-                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 rounded-full">
                   Secure OTP
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 Collect the 6-digit verification code from the recipient to confirm delivery handover.
               </p>
             </div>
@@ -796,7 +798,7 @@ export default function DriverDeliveryPage() {
                   onClick={handleRequestOtp}
                   disabled={requestingOtp || otpCountdown > 0 || isDelivered}
                   data-testid="request-otp-btn"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#0D1424] hover:bg-[#18243A] text-cyan-400 border border-[#263449] font-semibold text-xs shadow-dark-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {requestingOtp ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -813,8 +815,8 @@ export default function DriverDeliveryPage() {
                 </button>
 
                 {otpExpiresAt && (
-                  <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-400" />
+                  <span className="text-[11px] text-amber-400 font-medium flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-amber-400" />
                     <span>Valid 10 mins</span>
                   </span>
                 )}
@@ -823,9 +825,9 @@ export default function DriverDeliveryPage() {
               {requestOtpError && (
                 <div
                   data-testid="request-otp-error"
-                  className="mt-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2"
+                  className="mt-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2"
                 >
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-400" />
                   <span>{requestOtpError}</span>
                 </div>
               )}
@@ -835,18 +837,18 @@ export default function DriverDeliveryPage() {
             {devOtp && !isDelivered && (
               <div
                 data-testid="dev-otp-simulation-box"
-                className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 space-y-1 shadow-sm"
+                className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-300 space-y-1 shadow-dark-sm"
               >
                 <div className="flex items-center justify-between font-bold">
-                  <span className="flex items-center gap-1.5 text-amber-950">
-                    <ShieldCheck className="w-4 h-4 text-amber-600" />
+                  <span className="flex items-center gap-1.5 text-amber-200">
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
                     <span>Development Simulation</span>
                   </span>
-                  <span className="font-mono text-sm tracking-widest bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded border border-amber-300 font-bold" data-testid="dev-otp-code">
+                  <span className="font-mono text-sm tracking-widest bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded border border-amber-500/40 font-bold" data-testid="dev-otp-code">
                     {devOtp}
                   </span>
                 </div>
-                <p className="text-[11px] text-amber-800">
+                <p className="text-[11px] text-amber-300/80">
                   Authoritative OTP generated by server. In production, this code is transmitted directly and privately to the customer phone/email.
                 </p>
               </div>
@@ -858,17 +860,17 @@ export default function DriverDeliveryPage() {
                 {otpError && (
                   <div
                     data-testid="otp-verification-error"
-                    className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2 shadow-sm"
+                    className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2 shadow-dark-sm"
                   >
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                     <span>{otpError}</span>
                   </div>
                 )}
 
                 {/* 6-Digit OTP Code Input */}
                 <div>
-                  <label htmlFor="otp-input" className="block text-xs font-bold text-slate-700 mb-1">
-                    Recipient 6-Digit OTP <span className="text-rose-500">*</span>
+                  <label htmlFor="otp-input" className="block text-xs font-bold text-slate-300 mb-1">
+                    Recipient 6-Digit OTP <span className="text-rose-400">*</span>
                   </label>
                   <input
                     id="otp-input"
@@ -884,7 +886,7 @@ export default function DriverDeliveryPage() {
                       if (otpError) setOtpError(null);
                     }}
                     placeholder="Enter 6 digits (e.g. 123456)"
-                    className="w-full tracking-widest font-mono text-base font-bold text-center px-4 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                    className="w-full tracking-widest font-mono text-xl font-extrabold text-center px-4 py-3 bg-[#0D1424] border border-[#263449] rounded-xl text-emerald-400 focus:outline-none focus:border-emerald-500 shadow-inner transition-colors"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
                     Maximum 3 failed attempts before OTP lock.
@@ -893,7 +895,7 @@ export default function DriverDeliveryPage() {
 
                 {/* Handover Recipient Name */}
                 <div>
-                  <label htmlFor="recipient-name-input" className="block text-xs font-bold text-slate-700 mb-1">
+                  <label htmlFor="recipient-name-input" className="block text-xs font-bold text-slate-300 mb-1">
                     Handover Person Name <span className="text-slate-400 font-normal">(if different)</span>
                   </label>
                   <input
@@ -904,13 +906,13 @@ export default function DriverDeliveryPage() {
                     onChange={(e) => setRecipientName(e.target.value)}
                     maxLength={120}
                     placeholder="e.g. Robert Vance (neighbor)"
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full text-xs px-3 py-2 bg-[#0D1424] border border-[#263449] rounded-xl text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
 
                 {/* Verification Notes / Remarks */}
                 <div>
-                  <label htmlFor="verification-notes-input" className="block text-xs font-bold text-slate-700 mb-1">
+                  <label htmlFor="verification-notes-input" className="block text-xs font-bold text-slate-300 mb-1">
                     Handover Remarks <span className="text-slate-400 font-normal">(Optional)</span>
                   </label>
                   <input
@@ -921,7 +923,7 @@ export default function DriverDeliveryPage() {
                     onChange={(e) => setVerificationNotes(e.target.value)}
                     maxLength={500}
                     placeholder="e.g. Handed to recipient in person at front door"
-                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full text-xs px-3 py-2 bg-[#0D1424] border border-[#263449] rounded-xl text-[#F8FAFC] placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
                   />
                 </div>
 
@@ -930,7 +932,7 @@ export default function DriverDeliveryPage() {
                   type="submit"
                   disabled={submittingOtp || otpInput.length !== 6 || shipment.status !== 'OUT_FOR_DELIVERY'}
                   data-testid="verify-otp-submit-btn"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-glow-emerald transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submittingOtp ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -941,10 +943,10 @@ export default function DriverDeliveryPage() {
                 </button>
               </form>
             ) : (
-              <div className="bg-emerald-50 rounded-xl p-4 text-center text-xs text-emerald-800 space-y-1">
-                <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto mb-1" />
-                <p className="font-bold">Delivery Handover Finalized</p>
-                <p className="text-[11px] text-emerald-700">This consignment is officially marked as Delivered.</p>
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 text-center text-xs text-emerald-300 space-y-1">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400 mx-auto mb-1" />
+                <p className="font-bold text-white">Delivery Handover Finalized</p>
+                <p className="text-[11px] text-emerald-400/90">This consignment is officially marked as Delivered.</p>
               </div>
             )}
           </div>
